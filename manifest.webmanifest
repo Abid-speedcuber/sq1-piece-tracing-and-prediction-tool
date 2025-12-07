@@ -1,7 +1,7 @@
 {
-  "name": "Square-1 CO Tracker",
-  "short_name": "SQ1 CO",
-  "description": "Track corner orientation cases for Square-1 speedsolving",
+  "name": "SQ-1 Piece tracing tool",
+  "short_name": "SQ1 oblp",
+  "description": "Track pieces for different algorithms for Square-1 speedsolving co/ partial co or obl prediction",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -9,13 +9,13 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "res/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icon-512.png",
+      "src": "res/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

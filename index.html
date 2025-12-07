@@ -8,12 +8,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SQ1 Piece Tracing and Prediction Tool</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="draw-scramble.js"></script>
-    <script src="train-case.js"></script>
-    <script src="scramblegenerator.js"></script>
-    <script src="scrambleFormatting.js"></script>
-    <script src="scrambleNormalizer.js"></script>
-    <script src="co-tracker-training.js"></script>
     <link rel="manifest" href="manifest.webmanifest">
     <meta name="theme-color" content="#333333">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -44,13 +38,25 @@
     </div>
 
     <div class="main-content">
+        <div class="search-container" id="searchContainer" style="display:none;">
+            <input type="text" id="cardSearchInput" class="search-input" placeholder="Search cases by name...">
+            <button class="icon-btn" id="clearSearchBtn" title="Clear Search" style="display:none;">
+                <img src="res/close.svg" alt="Clear" style="width:12px;height:12px;">
+            </button>
+        </div>
         <div class="cards-grid" id="cardsGrid"></div>
         <div class="empty-state" id="emptyState" style="display:none;">
             No cases yet. Click the + button to add your first case.
         </div>
     </div>
 
-    <script src="restoftheapp.js"></script>
+    <script src="src/draw-scramble.js"></script>
+    <script src="src/train-case.js"></script>
+    <script src="src/scramblegenerator.js"></script>
+    <script src="src/scrambleFormatting.js"></script>
+    <script src="src/scrambleNormalizer.js"></script>
+    <script src="src/co-tracker-training.js"></script>
+    <script src="src/restoftheapp.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {

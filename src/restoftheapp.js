@@ -343,30 +343,93 @@ function loadState() {
     }
 }
 
-function renderCards() {
+function renderCards(searchQuery = '') {
     const grid = document.getElementById('cardsGrid');
     const empty = document.getElementById('emptyState');
+    const searchContainer = document.getElementById('searchContainer');
 
     if (STATE.cards.length === 0) {
         grid.style.display = 'none';
         empty.style.display = 'block';
+        searchContainer.style.display = 'none';
         return;
     }
 
+    searchContainer.style.display = 'flex';
     grid.style.display = 'grid';
     empty.style.display = 'none';
     grid.innerHTML = '';
 
-    STATE.cards.forEach((card, idx) => {
+    const filteredCards = STATE.cards.filter(card => {
+        if (!searchQuery) return true;
+        return (card.title || '').toLowerCase().includes(searchQuery.toLowerCase());
+    });
+
+    if (filteredCards.length === 0 && searchQuery) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#999;">No cases found matching your search.</div>';
+        return;
+    }
+
+    filteredCards.forEach(card => {
+        const idx = STATE.cards.indexOf(card);
         const cardEl = document.createElement('div');
         cardEl.className = 'card';
         cardEl.style.position = 'relative';
         cardEl.draggable = STATE.editMode;
 
+        // Generate thumbnail for first case if exists
+        let thumbnailHtml = '';
+        if (card.cases && card.cases.length > 0) {
+            const firstCase = card.cases[0];
+            const expandedSolution = window.ScrambleNormalizer.normalizeScramble(firstCase.solution || '');
+            const effectiveTrackedPieces = firstCase.overrideTracking ? firstCase.customTrackedPieces : STATE.settings.defaultTrackedPieces;
+            const scramble = pleaseInvertThisScrambleForSolutionVisualization(expandedSolution);
+
+            if (!effectiveTrackedPieces || effectiveTrackedPieces.length === 0) {
+                try {
+                    thumbnailHtml = window.Square1VisualizerLibraryWithSillyNames.visualizeCubeShapeOutlinesPlease(
+                        scramble, 90, 'transparent', 'transparent', 2, 5
+                    );
+                } catch (e) {
+                    thumbnailHtml = '<div style="color:#999;font-size:10px;">No preview</div>';
+                }
+            } else {
+                const pieces = effectiveTrackedPieces.map(code => {
+                    const mapping = STATE.settings.colorMappings.find(m => m.pieceCode === code);
+                    return mapping ? mapping.hex : code;
+                });
+                const colors = effectiveTrackedPieces.map(code => {
+                    const mapping = STATE.settings.colorMappings.find(m => m.pieceCode === code);
+                    return mapping ? mapping.color : '#ffb3d9';
+                });
+                const labels = STATE.settings.enableLabels ? effectiveTrackedPieces.map(code => {
+                    const mapping = STATE.settings.colorMappings.find(m => m.pieceCode === code);
+                    return mapping && mapping.label ? mapping.label : '';
+                }) : null;
+
+                try {
+                    thumbnailHtml = window.Square1VisualizerLibraryWithSillyNames.helpMeTrackAPiecePlease(
+                        'scramble', scramble, pieces, 90, '#ffffff', colors, 2, 5, labels
+                    );
+                } catch (e) {
+                    thumbnailHtml = '<div style="color:#999;font-size:10px;">No preview</div>';
+                }
+            }
+        } else {
+            thumbnailHtml = '<div style="color:#999;font-size:10px;">No cases</div>';
+        }
+
         cardEl.innerHTML = `
     ${STATE.editMode ? `<button class="card-delete-btn" onclick="deleteCard(${idx}, event)"><img src="res/delete.svg" style="width:14px;height:14px;"></button>` : ''}
-    <div class="card-title">${card.title || 'Anonymous Case'}</div>
-    <div class="card-preview">${card.cases?.length || 0} entries</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="position:relative;width:100%;height:100px;overflow:hidden;display:flex;justify-content:center;align-items:center;background:#f9f9f9;border:1px solid #e0e0e0;">
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(1.3);transform-origin:center center;">
+                ${thumbnailHtml}
+            </div>
+        </div>
+        <div class="card-title">${card.title || 'Anonymous Case'}</div>
+        <div class="card-preview">${card.cases?.length || 0} entries</div>
+    </div>
 `;
 
         if (!STATE.editMode) {
@@ -437,7 +500,34 @@ function renderCards() {
 
         grid.appendChild(cardEl);
     });
+
+    // Update search clear button visibility
+    const clearBtn = document.getElementById('clearSearchBtn');
+    if (clearBtn) {
+        clearBtn.style.display = searchQuery ? 'flex' : 'none';
+    }
 }
+
+// Setup search functionality
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('cardSearchInput');
+    const clearBtn = document.getElementById('clearSearchBtn');
+
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            renderCards(e.target.value);
+        });
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            renderCards('');
+            searchInput.focus();
+        });
+    }
+});
+
 function openCardModal(cardIdx) {
     const card = STATE.cards[cardIdx];
     if (!card.viewState) card.viewState = { parity: 'odd', orientation: 'original' };
@@ -519,10 +609,10 @@ function openCardInstructionModal() {
             </div>
             <div class="modal-body" style="line-height:1.8;overflow-y:auto;flex:1;">
                 <ul style="padding-left:20px;">
-                    <li style="margin-bottom:15px;"><strong>Show Actual State</strong> shows the algorithm on a real colored Square-1.</li>
-                    <li style="margin-bottom:15px;"><strong>Change Tracked Pieces</strong> lets you see the angle from other perspectives.</li>
-                    <li style="margin-bottom:15px;"><strong>Show Reference Scheme</strong> will show your letters on a square/square scramble.</li>
-                    <li style="margin-bottom:15px;"><strong>Train This Angle</strong> will let you train that angle in exact parity and orientation.</li>
+                    <li style="margin-bottom:15px;"><strong>Show Actual State</strong> displays the algorithm result on a fully colored Square-1 cube.</li>
+                    <li style="margin-bottom:15px;"><strong>Change Tracked Pieces</strong> allows you to view different piece combinations and perspectives for this specific case.</li>
+                    <li style="margin-bottom:15px;"><strong>Show Reference Scheme</strong> displays your labeling system on a square/square (0,0) state for reference.</li>
+                    <li style="margin-bottom:15px;"><strong>Train This Case</strong> opens the training mode for this specific case, maintaining the exact parity and orientation.</li>
                 </ul>
             </div>
         </div>
@@ -704,7 +794,7 @@ function openCaseEditModal(cardIdx, caseIdx) {
 <div style="display:flex;align-items:center;gap:10px;">
     <h3 style="color:#fff;margin:0;">Edit Angle ${caseIdx + 1}</h3>
     <button class="icon-btn" onclick="openEditInstructionModal()" title="Help" style="width:24px;height:24px;background:#555;">
-        <img src="res/instruction.svg" style="width:12px;height:12px;">
+        <img src="res/white-instruction.svg" style="width:12px;height:12px;">
     </button>
 </div>
 <button class="close-btn" onclick="window.cancelCaseEditModal()" style="color:#fff;">×</button>
@@ -943,21 +1033,43 @@ function openEditInstructionModal() {
     modal.className = 'modal';
     modal.style.display = 'block';
 
-    modal.innerHTML = `
-        <div class="modal-content" style="max-width:500px;max-height:80vh;margin:auto;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">
-            <div class="modal-header">
-                <h3>Edit Mode Instructions</h3>
-                <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
-            </div>
-            <div class="modal-body" style="line-height:1.8;overflow-y:auto;flex:1;">
-                <ol style="padding-left:20px;">
-                    <li style="margin-bottom:15px;">You can use some weird notations for easier input: <span style="font-style:italic;color:#666;">(Instructions to be added by user)</span></li>
-                    <li style="margin-bottom:15px;">If you insert scramble, it will automatically turn into the reversed algorithm the moment you save it.</li>
-                    <li style="margin-bottom:15px;">Override default tracked pieces will let you use non-default tracing for this exact angle.</li>
-                </ol>
-            </div>
-        </div>
-    `;
+modal.innerHTML = `
+<div class="modal-content" 
+     style="max-width:500px; max-height:80vh; margin:auto; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); display:flex; flex-direction:column;">
+
+    <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <h3>Edit Mode Instructions</h3>
+        <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
+    </div>
+
+    <div class="modal-body" style="line-height:1.8; overflow-y:auto; flex:1;">
+        <ol style="padding-left:20px;">
+            <li style="margin-bottom:15px;">
+                <strong>Alternative notation shortcuts:</strong> 
+                <span style="font-style:italic; color:#666;">
+                    Use apostrophe (') as a minus sign (e.g., 4' means -4). 
+                    Slashes are optional—the app will insert them automatically. 
+                    Letter mappings for moves:
+                    <br>1 → A, O, S
+                    <br>2 → T, C
+                    <br>3 → U, D
+                    <br>4 → V, E
+                    <br>5 → X, F
+                    <br>6 → W, B
+                    <br>Add apostrophe after letters for negative moves (e.g., A' means -1).
+                </span>
+            </li>
+            <li style="margin-bottom:15px;">
+                When inserting a scramble, it will automatically be converted to the inverse algorithm upon saving.
+            </li>
+            <li style="margin-bottom:15px;">
+                <strong>Override default tracked pieces</strong> lets you customize which pieces are tracked for this specific case only.
+            </li>
+        </ol>
+    </div>
+
+</div>
+`;
 
     document.body.appendChild(modal);
     modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
@@ -1895,7 +2007,12 @@ function openVariableModal() {
     modal.innerHTML = `
         <div class="modal-content" style="margin:auto;">
             <div class="modal-header">
-                <h3>Variable Table</h3>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <h3 style="margin:0;">Variable Table</h3>
+                    <button class="icon-btn" onclick="openVariableInstructionModal()" title="Variable Help" style="width:24px;height:24px;">
+                        <img src="res/instruction.svg" style="width:12px;height:12px;">
+                    </button>
+                </div>
                 <div style="display:flex;gap:8px;align-items:center;">
                     <button class="icon-btn" onclick="window.addVariableModal()" title="Add Variable">
                         <img src="res/plus.svg" style="width:16px;height:16px;">
@@ -1985,26 +2102,38 @@ function openHomeInstructionModal() {
     modal.style.display = 'block';
 
     modal.innerHTML = `
-        <div class="modal-content" style="max-width:600px;height:auto;">
+        <div class="modal-content" style="max-width:600px;height:80vh;">
             <div class="modal-header">
                 <h3>Welcome to SQ1 Piece Tracing Tool</h3>
                 <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
             </div>
             <div class="modal-body" style="line-height:1.8;overflow-y:auto;flex:1;">
-                <ol style="padding-left:20px;">
-                    <li style="margin-bottom:15px;">You will find various instructions scattered around the app that will help you navigate the app better.</li>
-                    <li style="margin-bottom:15px;">I am not a programmer, all these codes are written using Claude AI, so you might find bugs. Report them to me at <a href="mailto:abidashrafkhulna@gmail.com">abidashrafkhulna@gmail.com</a>. Meanwhile, to save your precious data, kindly keep constant backups by going to settings and exporting data.</li>
-                    <li style="margin-bottom:15px;">If anything freezes, kindly do a refresh and the app should work properly after that.</li>
-                    <li style="margin-bottom:15px;">The code is open source. Find it at <a href="https://github.com/Abid-speedcuber/sq1-piece-tracing-and-prediction-tool" target="_blank">github.com/Abid-speedcuber/sq1-piece-tracing-and-prediction-tool</a>. The code is written with AI, so it'll feel pretty sloppy. Feel free to have fun!</li>
-                </ol>
-                <h4 style="margin-top:25px;margin-bottom:10px;">Variables:</h4>
-                <p>To access the variables table, press the var button on the topbar. It will let you store frequently used triggers into smaller macros for easier use. You can use one variable in another variable. To use a variable in an angle, write *yourVariableName* or &lt;yourVariableName&gt;.</p>
+                <h4 style="margin-bottom:10px;">Getting Started:</h4>
+                <ul style="padding-left:20px;margin-bottom:20px;">
+                    <li style="margin-bottom:10px;">Look for the <strong>help icons (ⓘ)</strong> throughout the app—they provide context-specific instructions</li>
+                    <li style="margin-bottom:10px;">This app was built using Claude AI. If you encounter bugs, please report them to <a href="mailto:abidashrafkhulna@gmail.com">abidashrafkhulna@gmail.com</a></li>
+                    <li style="margin-bottom:10px;"><strong>Important:</strong> Regularly export your data from Settings to prevent data loss</li>
+                    <li style="margin-bottom:10px;">If the app freezes, refresh the page—your data is saved automatically</li>
+                </ul>
+
+                <h4 style="margin-bottom:10px;">Variables:</h4>
+                <ul style="padding-left:20px;margin-bottom:20px;">
+                    <li style="margin-bottom:10px;">Click the <strong>table icon</strong> in the top bar to access the Variables table</li>
+                    <li style="margin-bottom:10px;">Store frequently used triggers as variables for easier input</li>
+                    <li style="margin-bottom:10px;">Variables can reference other variables (they expand recursively)</li>
+                    <li style="margin-bottom:10px;">Use variables in algorithms with <code>*variableName*</code> or <code>&lt;variableName&gt;</code></li>
+                </ul>
                 
-                <h4 style="margin-top:20px;margin-bottom:10px;">The Case Organization System:</h4>
-                <p>Each case on the home screen has 4 sections: normal orientation even parity, normal orientation odd parity, mirror orientation even parity, mirror orientation odd parity. So you can easily organize your angles pretty neatly.</p>
-                
-                <p style="margin-top:15px;">You can delete a case from the edit menu (pen icon above). You can also rearrange them from there.</p>
-                <p>You can change some settings and have some personalized features from the settings.</p>
+                <h4 style="margin-bottom:10px;">Case Organization:</h4>
+                <ul style="padding-left:20px;margin-bottom:20px;">
+                    <li style="margin-bottom:10px;">Each case contains 4 sections organized by parity (odd/even) and orientation (original/mirror)</li>
+                    <li style="margin-bottom:10px;">Click the <strong>edit icon</strong> to delete or rearrange cases</li>
+                    <li style="margin-bottom:10px;">Each case card shows a thumbnail of its first angle for quick reference</li>
+                    <li style="margin-bottom:10px;">Access Settings to customize colors, labels, and default tracked pieces</li>
+                </ul>
+
+                <h4 style="margin-bottom:10px;">Open Source:</h4>
+                <p style="padding-left:20px;">This project is open source! View the code on <a href="https://github.com/Abid-speedcuber/sq1-piece-tracing-and-prediction-tool" target="_blank">GitHub</a>. Contributions and feedback are welcome!</p>
             </div>
         </div>
     `;
@@ -2025,8 +2154,23 @@ function openVariableInstructionModal() {
                 <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
             </div>
             <div class="modal-body" style="line-height:1.8;overflow-y:auto;flex:1;">
-                <p style="margin-bottom:15px;">You can use some weird notations for easier input:</p>
-                <p style="font-style:italic;color:#666;">(Instructions to be added by user)</p>
+                <p style="margin-bottom:15px;"><strong>Alternative notation shortcuts for easier input:</strong></p>
+                <ul style="padding-left:20px;line-height:1.8;">
+                    <li style="margin-bottom:10px;">Use apostrophe (') as a minus sign: <code>4'</code> means <code>-4</code></li>
+                    <li style="margin-bottom:10px;">Slashes are optional—they'll be inserted automatically</li>
+                    <li style="margin-bottom:10px;">Letter shortcuts for moves:
+                        <ul style="margin-top:5px;padding-left:20px;">
+                            <li>1 → A, O, S</li>
+                            <li>2 → T, C</li>
+                            <li>3 → U, D</li>
+                            <li>4 → V, E</li>
+                            <li>5 → X, F</li>
+                            <li>6 → W, B</li>
+                        </ul>
+                    </li>
+                    <li style="margin-bottom:10px;">Add apostrophe after letters for negative moves: <code>A'</code> means <code>-1</code></li>
+                    <li style="margin-bottom:10px;">Variables can reference other variables—they expand recursively</li>
+                </ul>
             </div>
         </div>
     `;
@@ -2097,11 +2241,14 @@ function openSettingsInstructionModal() {
                 <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
             </div>
             <div class="modal-body" style="line-height:1.8;overflow-y:auto;flex:1;">
-                <ol style="padding-left:20px;">
-                    <li style="margin-bottom:15px;">Image size defines the traced image, not the image inside the training modal. Change it from settings inside the modal.</li>
-                    <li style="margin-bottom:15px;">You can turn off some default tracked pieces for training purposes.</li>
-                    <li style="margin-bottom:15px;">Export data regularly to be safe from data loss.</li>
-                </ol>
+                <ul style="padding-left:20px;">
+                    <li style="margin-bottom:15px;"><strong>Image Size:</strong> This controls the size of traced images in case views. Training modal images have separate size controls within the training settings.</li>
+                    <li style="margin-bottom:15px;"><strong>Letter/Number Labels:</strong> Toggle to show or hide piece labels on traced images.</li>
+                    <li style="margin-bottom:15px;"><strong>Color Mappings:</strong> Customize the color and label for each piece position. These colors are used when tracking specific pieces.</li>
+                    <li style="margin-bottom:15px;"><strong>Default Tracked Pieces:</strong> Set which pieces are tracked by default. Individual cases can override this setting.</li>
+                    <li style="margin-bottom:15px;"><strong>Export Data:</strong> Regularly export your data as a backup. All settings, cases, and variables are included in the export.</li>
+                    <li style="margin-bottom:15px;"><strong>Import Data:</strong> Restore from a previously exported backup. This will replace all current data.</li>
+                </ul>
             </div>
         </div>
     `;
@@ -2142,14 +2289,9 @@ function openDefaultTrackedPiecesModal() {
 
     modal.innerHTML = `
                 <div class="modal-content" style="max-width:450px;">
-<div class="modal-header">
-    <div style="display:flex;align-items:center;gap:10px;">
-        <h3 style="margin:0;">Variable Table</h3>
-        <button class="icon-btn" onclick="openVariableInstructionModal()" title="Variable Help" style="width:24px;height:24px;">
-            <img src="res/instruction.svg" style="width:12px;height:12px;">
-        </button>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;">
+                    <div class="modal-header">
+                        <h3>Default Tracked Pieces</h3>
+                        <button class="close-btn" onclick="window.discardDefaultTrackedPieces()">×</button>
                     </div>
                     <div class="modal-body">
                         <p style="margin-bottom:15px;font-size:13px;color:#666;">Select pieces to track by default. Individual cases can override this.</p>
