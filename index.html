@@ -1,0 +1,65 @@
+<!--old code-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQ1 Piece Tracing and Prediction Tool</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="draw-scramble.js"></script>
+    <script src="train-case.js"></script>
+    <script src="scramblegenerator.js"></script>
+    <script src="scrambleFormatting.js"></script>
+    <script src="scrambleNormalizer.js"></script>
+    <script src="co-tracker-training.js"></script>
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#333333">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SQ1 CO Tracker">
+</head>
+
+<body>
+    <div class="topbar">
+        <div class="topbar-left">SQ1 Piece Tracing and Prediction Tool</div>
+        <div class="topbar-right">
+            <button class="icon-btn" id="addCardBtn" title="Add Case">
+                <img src="res/plus.svg" alt="Add" style="width:16px;height:16px;">
+            </button>
+            <button class="icon-btn" id="editBtn" title="Edit Entries">
+                <img src="res/edit.svg" alt="Edit" style="width:16px;height:16px;">
+            </button>
+            <button class="icon-btn" id="variableBtn" title="Variable Table">
+                <img src="res/table.svg" alt="Variables" style="width:16px;height:16px;">
+            </button>
+            <button class="icon-btn" id="settingsBtn" title="Settings">
+                <img src="res/settings.svg" alt="Settings" style="width:16px;height:16px;">
+            </button>
+            <button class="icon-btn" id="instructionBtn" title="Instructions">
+                <img src="res/instruction.svg" alt="Instructions" style="width:16px;height:16px;">
+            </button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="cards-grid" id="cardsGrid"></div>
+        <div class="empty-state" id="emptyState" style="display:none;">
+            No cases yet. Click the + button to add your first case.
+        </div>
+    </div>
+
+    <script src="restoftheapp.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/serviceWorker.js')
+                    .then(reg => console.log('Service Worker registered:', reg.scope))
+                    .catch(err => console.log('Service Worker registration failed:', err));
+            });
+        }
+    </script>
+</body>
+
+</html>
