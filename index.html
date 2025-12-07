@@ -39,10 +39,12 @@
 
     <div class="main-content">
         <div class="search-container" id="searchContainer" style="display:none;">
-            <input type="text" id="cardSearchInput" class="search-input" placeholder="Search cases by name...">
-            <button class="icon-btn" id="clearSearchBtn" title="Clear Search" style="display:none;">
-                <img src="res/close.svg" alt="Clear" style="width:12px;height:12px;">
-            </button>
+            <div class="search-wrapper">
+                <input type="text" id="cardSearchInput" class="search-input" placeholder="Search cases by name...">
+                <button class="icon-btn search-clear-btn" id="clearSearchBtn" title="Clear Search" style="display:none;">
+                    <img src="res/close.svg" alt="Clear" style="width:14px;height:14px;">
+                </button>
+            </div>
         </div>
         <div class="cards-grid" id="cardsGrid"></div>
         <div class="empty-state" id="emptyState" style="display:none;">
@@ -55,8 +57,14 @@
     <script src="src/scramblegenerator.js"></script>
     <script src="src/scrambleFormatting.js"></script>
     <script src="src/scrambleNormalizer.js"></script>
-    <script src="src/co-tracker-training.js"></script>
+
+    <script src="src/variableTable.js"></script>
+    <script src="src/instructions.js"></script>
+    <script src="src/settings.js"></script>
+
+    <script src="src/case.js"></script>
     <script src="src/restoftheapp.js"></script>
+    <script src="src/co-tracker-training.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {

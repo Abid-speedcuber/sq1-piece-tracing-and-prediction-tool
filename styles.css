@@ -68,21 +68,54 @@ body {
 .search-container {
     margin-bottom: 20px;
     display: flex;
+    justify-content: center;
     align-items: center;
-    gap: 10px;
+}
+
+.search-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    align-items: center;
+    background: #f9f9f9;
+    border: 1px solid #ccc;
+    border-radius: 24px;
+    transition: all 0.2s;
+}
+
+.search-wrapper:focus-within {
+    background: #fff;
+    border-color: #1c62b9;
+    box-shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
 }
 
 .search-input {
     flex: 1;
-    padding: 10px 15px;
-    border: 1px solid #ddd;
-    font-size: 14px;
-    max-width: 400px;
+    padding: 12px 20px;
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    outline: none;
 }
 
-.search-input:focus {
-    outline: none;
-    border-color: #333;
+.search-clear-btn {
+    position: absolute;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.search-clear-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
 }
 
 .cards-grid {
@@ -126,6 +159,7 @@ body {
     align-items: center;
     justify-content: center;
     padding: 0;
+    z-index: 10;
 }
 
 .card-delete-btn:hover {

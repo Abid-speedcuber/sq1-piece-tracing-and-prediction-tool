@@ -497,7 +497,7 @@ function whatColorIsThisHalfCornerPlease(hexChar) {
 }
 
 // === SVG GENERATION FOR INDIVIDUAL PIECES ===
-function pleaseCreateOnePieceSVGForMe(slot, pieceHex, centerX, centerY, centerAngle, radiusInner, radiusOuter, radiusApex, unit10vh, isBottomLayer, strokeThin, strokeMedium, strokeThick, colorScheme) {
+function pleaseCreateOnePieceSVGForMe(slot, pieceHex, centerX, centerY, centerAngle, radiusInner, radiusOuter, radiusApex, unit10vh, isBottomLayer, strokeThin, strokeMedium, strokeThick, colorScheme, showLabels, labelText) {
   isBottomLayer = !!(slot && typeof slot.startLetter === 'number' && slot.startLetter >= 12);
   
   let svgMarkup = '';
@@ -516,6 +516,27 @@ function pleaseCreateOnePieceSVGForMe(slot, pieceHex, centerX, centerY, centerAn
     
     svgMarkup += `<polygon points="${pointArrayToSVGStringPlease([pointMidA, pointA, pointB, pointMidB])}" fill="${edgeColors.outer}" stroke="#333" stroke-width="${strokeMedium}"/>`;
     svgMarkup += `<polygon points="${pointArrayToSVGStringPlease([pointInner, pointMidA, pointMidB])}" fill="${edgeColors.inner}" stroke="#333" stroke-width="${strokeThin}"/>`;
+    
+    // Add label for edge piece if enabled
+    if (showLabels && labelText) {
+      const labelRadius = radiusOuter * 0.65;
+      const labelPos = polarToCartesianButWithFunnyName(centerX, centerY, labelRadius, centerAngle);
+      const fontSize = radiusOuter * 0.20;
+      // Calculate contrast color for label
+      let labelColor = '#000000';
+      const rgb = edgeColors.inner.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+      if (rgb) {
+        const r = parseInt(rgb[1], 16) / 255;
+        const g = parseInt(rgb[2], 16) / 255;
+        const b = parseInt(rgb[3], 16) / 255;
+        const rLin = r <= 0.03928 ? r / 12.92 : Math.pow((r + 0.055) / 1.055, 2.4);
+        const gLin = g <= 0.03928 ? g / 12.92 : Math.pow((g + 0.055) / 1.055, 2.4);
+        const bLin = b <= 0.03928 ? b / 12.92 : Math.pow((b + 0.055) / 1.055, 2.4);
+        const luminance = 0.2126 * rLin + 0.7152 * gLin + 0.0722 * bLin;
+        labelColor = luminance > 0.5 ? '#000000' : '#FFFFFF';
+      }
+      svgMarkup += `<text x="${labelPos.x}" y="${labelPos.y}" text-anchor="middle" dominant-baseline="middle" fill="${labelColor}" font-size="${fontSize}" font-weight="bold" font-family="Arial, sans-serif">${labelText}</text>`;
+    }
     
   } else if (slot.type === 'corner') {
     const pointInner = polarToCartesianButWithFunnyName(centerX, centerY, radiusInner, centerAngle);
@@ -536,6 +557,27 @@ function pleaseCreateOnePieceSVGForMe(slot, pieceHex, centerX, centerY, centerAn
     svgMarkup += `<polygon points="${pointArrayToSVGStringPlease([pointInner, pointOuterLeft, pointApex, pointOuterRight])}" fill="none" stroke="#333" stroke-width="${strokeMedium}"/>`;
     svgMarkup += `<line x1="${pointApex.x.toFixed(2)}" y1="${pointApex.y.toFixed(2)}" x2="${pointSmallBottom.x.toFixed(2)}" y2="${pointSmallBottom.y.toFixed(2)}" stroke="#333" stroke-width="${strokeMedium}" stroke-linecap="round"/>`;
     
+    // Add label for corner piece if enabled
+    if (showLabels && labelText) {
+      const labelRadius = radiusOuter * 0.65;
+      const labelPos = polarToCartesianButWithFunnyName(centerX, centerY, labelRadius, centerAngle);
+      const fontSize = radiusOuter * 0.20;
+      // Calculate contrast color for label
+      let labelColor = '#000000';
+      const rgb = colors.top.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+      if (rgb) {
+        const r = parseInt(rgb[1], 16) / 255;
+        const g = parseInt(rgb[2], 16) / 255;
+        const b = parseInt(rgb[3], 16) / 255;
+        const rLin = r <= 0.03928 ? r / 12.92 : Math.pow((r + 0.055) / 1.055, 2.4);
+        const gLin = g <= 0.03928 ? g / 12.92 : Math.pow((g + 0.055) / 1.055, 2.4);
+        const bLin = b <= 0.03928 ? b / 12.92 : Math.pow((b + 0.055) / 1.055, 2.4);
+        const luminance = 0.2126 * rLin + 0.7152 * gLin + 0.0722 * bLin;
+        labelColor = luminance > 0.5 ? '#000000' : '#FFFFFF';
+      }
+      svgMarkup += `<text x="${labelPos.x}" y="${labelPos.y}" text-anchor="middle" dominant-baseline="middle" fill="${labelColor}" font-size="${fontSize}" font-weight="bold" font-family="Arial, sans-serif">${labelText}</text>`;
+    }
+    
   } else if (slot.type === 'half-corner') {
     const halfInnerAngle = 15;
     const pointInner = polarToCartesianButWithFunnyName(centerX, centerY, radiusInner, centerAngle);
@@ -551,7 +593,7 @@ function pleaseCreateOnePieceSVGForMe(slot, pieceHex, centerX, centerY, centerAn
 }
 
 // === MAIN SVG GENERATION ===
-function pleaseGenerateTheFullSVGFromHexNotation(hexScrambleCode, equatorChar, desiredSize, colorScheme, ringDistance = 5) {
+function pleaseGenerateTheFullSVGFromHexNotation(hexScrambleCode, equatorChar, desiredSize, colorScheme, ringDistance = 5, showLabels = false, pieceLabels = null) {
   if (hexScrambleCode.length !== 25) {
     throw new Error('Invalid scramble format - needs 25 characters!');
   }
@@ -617,7 +659,8 @@ function pleaseGenerateTheFullSVGFromHexNotation(hexScrambleCode, equatorChar, d
     if (slot.startLetter < 12) {
       const piece = pieceAssignments[slot.label];
       const angle = gimmeTheAngleForThisSlotPlease(slot, leftLayerAngles);
-      htmlOutput += pleaseCreateOnePieceSVGForMe(slot, piece, centerX, centerY, angle, radiusInner, radiusOuter, radiusApex, unit10vh, false, strokeThin, strokeMedium, strokeThick, colorScheme);
+      const labelText = showLabels && pieceLabels && pieceLabels[piece.toLowerCase()] ? pieceLabels[piece.toLowerCase()] : null;
+      htmlOutput += pleaseCreateOnePieceSVGForMe(slot, piece, centerX, centerY, angle, radiusInner, radiusOuter, radiusApex, unit10vh, false, strokeThin, strokeMedium, strokeThick, colorScheme, showLabels, labelText);
     }
   });
   
@@ -638,7 +681,8 @@ function pleaseGenerateTheFullSVGFromHexNotation(hexScrambleCode, equatorChar, d
     if (slot.startLetter >= 12) {
       const piece = pieceAssignments[slot.label];
       const angle = gimmeTheAngleForThisSlotPlease(slot, rightLayerAngles);
-      htmlOutput += pleaseCreateOnePieceSVGForMe(slot, piece, centerX, centerY, angle, radiusInner, radiusOuter, radiusApex, unit10vh, true, strokeThin, strokeMedium, strokeThick, colorScheme);
+      const labelText = showLabels && pieceLabels && pieceLabels[piece.toLowerCase()] ? pieceLabels[piece.toLowerCase()] : null;
+      htmlOutput += pleaseCreateOnePieceSVGForMe(slot, piece, centerX, centerY, angle, radiusInner, radiusOuter, radiusApex, unit10vh, true, strokeThin, strokeMedium, strokeThick, colorScheme, showLabels, labelText);
     }
   });
   
@@ -1003,7 +1047,7 @@ function visualizeCubeShapeOutlinesPlease(input, size = 200, edgeFill = 'transpa
  * @param {object} colors - Color customization object with defaults
  * @returns {string} HTML string containing the SVG visualization
  */
-function visualizeFromHexCodePlease(hexCode, size = 200, colors = {}, ringDistance = 5) {
+function visualizeFromHexCodePlease(hexCode, size = 200, colors = {}, ringDistance = 5, showLabels = false, pieceLabels = null) {
   const colorScheme = {
     topColor: colors.topColor || '#000000',
     bottomColor: colors.bottomColor || '#FFFFFF',
@@ -1015,7 +1059,7 @@ function visualizeFromHexCodePlease(hexCode, size = 200, colors = {}, ringDistan
     circleColor: colors.circleColor || 'transparent'
   };
   
-  return pleaseGenerateTheFullSVGFromHexNotation(hexCode, hexCode[12], size, colorScheme, ringDistance);
+  return pleaseGenerateTheFullSVGFromHexNotation(hexCode, hexCode[12], size, colorScheme, ringDistance, showLabels, pieceLabels);
 }
 
 /**

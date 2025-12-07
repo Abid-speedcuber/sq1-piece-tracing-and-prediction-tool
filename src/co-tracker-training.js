@@ -91,8 +91,8 @@ function createCOTrackerTrainingModal() {
                     <div id="trainingScrambleImage">Loading...</div>
                 </div>
                 <div id="trainingTimer" style="font-size:5rem;font-weight:600;font-family:'Courier New',monospace;color:#2d3748;letter-spacing:4px;">0.000</div>
-                <button id="trainingPeekBtn" title="Peek at Reference Scheme (Hold Backspace or drag to move)" 
-                        style="position:absolute;bottom:20px;right:20px;width:48px;height:48px;border:2px solid #333;background:#fff;border-radius:50%;cursor:move;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);z-index:10;touch-action:none;">
+                <button id="trainingPeekBtn" title="Peek at Reference Scheme (Hold to peek or drag to move)" 
+                        style="position:fixed;bottom:5vh;right:5vh;width:48px;height:48px;border:2px solid #333;background:#fff;border-radius:50%;cursor:move;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);z-index:10;touch-action:none;">
                     <img src="res/eye.svg" style="width:24px;height:24px;pointer-events:none;">
                 </button>
             </div>
@@ -112,8 +112,9 @@ function createCOTrackerTrainingModal() {
         openTrainingSettingsModal();
     });
 
-    // Draggable peek button
+    // Draggable peek button - reset position on new modal open
     const peekBtn = document.getElementById('trainingPeekBtn');
+    peekBtn.style.transform = 'translate(0px, 0px)';
     let isDragging = false;
     let dragStartTime = 0;
     let dragStartX = 0;
@@ -121,12 +122,21 @@ function createCOTrackerTrainingModal() {
     let currentX = 0;
     let currentY = 0;
 
+    let peekTimeout = null;
+
     peekBtn.addEventListener('mousedown', (e) => {
         e.stopPropagation();
         dragStartTime = Date.now();
         dragStartX = e.clientX - currentX;
         dragStartY = e.clientY - currentY;
         isDragging = false;
+        
+        // Start peeking after a short delay if not dragging
+        peekTimeout = setTimeout(() => {
+            if (!isDragging) {
+                startPeeking();
+            }
+        }, 150);
     });
 
     peekBtn.addEventListener('touchstart', (e) => {
@@ -137,6 +147,13 @@ function createCOTrackerTrainingModal() {
         dragStartX = touch.clientX - currentX;
         dragStartY = touch.clientY - currentY;
         isDragging = false;
+        
+        // Start peeking after a short delay if not dragging
+        peekTimeout = setTimeout(() => {
+            if (!isDragging) {
+                startPeeking();
+            }
+        }, 150);
     });
 
     document.addEventListener('mousemove', (e) => {
@@ -148,7 +165,12 @@ function createCOTrackerTrainingModal() {
             const deltaY = Math.abs(e.clientY - (dragStartY + currentY));
             
             if (deltaX > 5 || deltaY > 5) {
-                isDragging = true;
+                if (!isDragging) {
+                    // Just started dragging - clear peek timeout and start peeking
+                    clearTimeout(peekTimeout);
+                    isDragging = true;
+                    startPeeking();
+                }
                 currentX = e.clientX - dragStartX;
                 currentY = e.clientY - dragStartY;
                 peekBtn.style.transform = `translate(${currentX}px, ${currentY}px)`;
@@ -166,7 +188,12 @@ function createCOTrackerTrainingModal() {
             const deltaY = Math.abs(touch.clientY - (dragStartY + currentY));
             
             if (deltaX > 5 || deltaY > 5) {
-                isDragging = true;
+                if (!isDragging) {
+                    // Just started dragging - clear peek timeout and start peeking
+                    clearTimeout(peekTimeout);
+                    isDragging = true;
+                    startPeeking();
+                }
                 currentX = touch.clientX - dragStartX;
                 currentY = touch.clientY - dragStartY;
                 peekBtn.style.transform = `translate(${currentX}px, ${currentY}px)`;
@@ -176,43 +203,45 @@ function createCOTrackerTrainingModal() {
 
     peekBtn.addEventListener('mouseup', (e) => {
         e.stopPropagation();
-        const clickDuration = Date.now() - dragStartTime;
+        clearTimeout(peekTimeout);
         dragStartTime = 0;
         
-        if (!isDragging && clickDuration < 200) {
-            // Quick click - toggle peeking
-            if (trainingPeeking) {
-                stopPeeking();
-            } else {
-                startPeeking();
-            }
-        }
+        // Always stop peeking on release
+        stopPeeking();
         isDragging = false;
     });
 
     peekBtn.addEventListener('touchend', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const clickDuration = Date.now() - dragStartTime;
+        clearTimeout(peekTimeout);
         dragStartTime = 0;
         
-        if (!isDragging && clickDuration < 200) {
-            // Quick tap - toggle peeking
-            if (trainingPeeking) {
-                stopPeeking();
-            } else {
-                startPeeking();
-            }
-        }
+        // Always stop peeking on release
+        stopPeeking();
         isDragging = false;
     });
 
     document.addEventListener('mouseup', () => {
+        const modal = document.getElementById('coTrackerTrainingModal');
+        if (modal && modal.style.display !== 'none') {
+            clearTimeout(peekTimeout);
+            if (dragStartTime > 0 || isDragging) {
+                stopPeeking();
+            }
+        }
         dragStartTime = 0;
         isDragging = false;
     });
 
     document.addEventListener('touchend', () => {
+        const modal = document.getElementById('coTrackerTrainingModal');
+        if (modal && modal.style.display !== 'none') {
+            clearTimeout(peekTimeout);
+            if (dragStartTime > 0 || isDragging) {
+                stopPeeking();
+            }
+        }
         dragStartTime = 0;
         isDragging = false;
     });
@@ -240,6 +269,28 @@ function createCOTrackerTrainingModal() {
 }
 
 function openCOTrackerTrainingModal(cardIdx, caseIdx) {
+    // Close any existing modal first
+    const existingModal = document.getElementById('coTrackerTrainingModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    // Reset all state variables
+    currentTrainingCardIdx = null;
+    currentTrainingCaseIdx = null;
+    trainingTimerRunning = false;
+    trainingTimerStartTime = 0;
+    trainingTimerInterval = null;
+    trainingTimerElapsed = 0;
+    trainingIsHolding = false;
+    trainingPreGeneratedScrambles = [];
+    trainingCurrentScrambleText = '';
+    trainingScrambleHistory = [];
+    trainingCurrentHistoryIndex = -1;
+    trainingPeeking = false;
+    trainingOriginalImage = '';
+
+    // Create fresh modal
     createCOTrackerTrainingModal();
 
     const modal = document.getElementById('coTrackerTrainingModal');
@@ -251,12 +302,6 @@ function openCOTrackerTrainingModal(cardIdx, caseIdx) {
 
     // Set title
     document.getElementById('trainingCaseTitle').textContent = `Training: ${card.title || 'Case'}`;
-
-    // Reset state
-    trainingTimerElapsed = 0;
-    trainingScrambleHistory = [];
-    trainingCurrentHistoryIndex = -1;
-    trainingPreGeneratedScrambles = [];
 
     // Pre-generate 3 scrambles
     for (let i = 0; i < 3; i++) {
@@ -286,12 +331,6 @@ function closeCOTrackerTrainingModal() {
     trainingTimerElapsed = 0;
     currentTrainingCardIdx = null;
     currentTrainingCaseIdx = null;
-    
-    // Reset peek button position
-    const peekBtn = document.getElementById('trainingPeekBtn');
-    if (peekBtn) {
-        peekBtn.style.transform = 'translate(0px, 0px)';
-    }
 }
 
 function openTrainingSettingsModal() {
@@ -419,6 +458,11 @@ function updateTrainingImageSize(size) {
         const currentData = trainingScrambleHistory[trainingCurrentHistoryIndex];
         regenerateTrainingImageWithSize(currentData);
     }
+    // Regenerate pre-generated scrambles with new size
+    trainingPreGeneratedScrambles = trainingPreGeneratedScrambles.map(scrambleData => {
+        regenerateTrainingImageWithSize(scrambleData);
+        return scrambleData;
+    });
 }
 
 function updateTrainingColor(colorKey, value) {
@@ -441,6 +485,11 @@ function updateTrainingColor(colorKey, value) {
         const currentData = trainingScrambleHistory[trainingCurrentHistoryIndex];
         regenerateTrainingImageWithSize(currentData);
     }
+    // Regenerate pre-generated scrambles with new colors
+    trainingPreGeneratedScrambles = trainingPreGeneratedScrambles.map(scrambleData => {
+        regenerateTrainingImageWithSize(scrambleData);
+        return scrambleData;
+    });
 }
 
 function updateTrainingLockOrientation(value) {
@@ -763,23 +812,30 @@ function startPeeking() {
             return; // No tracked pieces, nothing to show
         }
 
-        const pieces = effectiveTrackedPieces.map(code => {
-            const mapping = STATE.settings.colorMappings.find(m => m.pieceCode === code);
-            return mapping ? mapping.hex : code;
-        });
+        const colorScheme = trainingSettings.colorScheme || {
+            topColor: '#000000',
+            bottomColor: '#FFFFFF',
+            frontColor: '#CC0000',
+            rightColor: '#00AA00',
+            backColor: '#FF8C00',
+            leftColor: '#0066CC',
+            dividerColor: '#7a0000',
+            circleColor: 'transparent'
+        };
 
-        const colors = effectiveTrackedPieces.map(code => {
-            const mapping = STATE.settings.colorMappings.find(m => m.pieceCode === code);
-            return mapping ? mapping.color : '#ffb3d9';
-        });
+        // Build piece labels map from settings
+        const pieceLabels = {};
+        if (STATE.settings.enableLabels) {
+            STATE.settings.colorMappings.forEach(mapping => {
+                if (mapping.label) {
+                    pieceLabels[mapping.hex] = mapping.label;
+                }
+            });
+        }
 
-        const labels = STATE.settings.enableLabels ? effectiveTrackedPieces.map(code => {
-            const mapping = STATE.settings.colorMappings.find(m => m.pieceCode === code);
-            return mapping && mapping.label ? mapping.label : '';
-        }) : null;
-
-        const referenceHtml = window.Square1VisualizerLibraryWithSillyNames.helpMeTrackAPiecePlease(
-            'scramble', '(0,0)', pieces, trainingSettings.scrambleImageSize, '#ffffff', colors, 2, 5, labels
+        // Show complex labeled image of current scramble
+        const referenceHtml = window.Square1VisualizerLibraryWithSillyNames.visualizeFromHexCodePlease(
+            currentData.hex, trainingSettings.scrambleImageSize, colorScheme, 5, STATE.settings.enableLabels, pieceLabels
         );
 
         imageContainer.innerHTML = referenceHtml;
