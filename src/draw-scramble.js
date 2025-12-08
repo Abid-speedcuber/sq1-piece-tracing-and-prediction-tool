@@ -1158,18 +1158,113 @@ function helpMeTrackAPiecePlease(trackingInputMethod, trackingInputValue, specia
   return pleaseGeneratePieceTrackingSVG(hexCode, size, normalFill, specialPieces, specialColors, normalizedLabels, strokeWidth, ringDistance);
 }
 
-// ========================================
-// === EXPORT FOR USE ===
-// ========================================
+/**
+ * Generate visualization with ONLY labels visible (transparent pieces, only labels shown)
+ * Used for overlay functionality in training mode
+ */
+function visualizeLabelsOnlyPlease(hexCode, size = 200, ringDistance = 5, pieceLabels = null) {
+  if (hexCode.length !== 25) {
+    throw new Error('Invalid scramble format - needs 25 characters!');
+  }
+  
+  const actualEquator = hexCode[12];
+  const shapeArray = new Array(24);
+  let scrambleIdx = 0;
+  
+  // Determine shape for top layer (0-11)
+  for (let i = 0; i < 12; i++) {
+    if (scrambleIdx === 12) scrambleIdx++;
+    const piece = hexCode[scrambleIdx];
+    const isCorner = ['1', '3', '5', '7', '9', 'b', 'd', 'f'].includes(piece.toLowerCase());
+    shapeArray[i] = isCorner ? 1 : 0;
+    scrambleIdx++;
+  }
+  
+  // Determine shape for bottom layer (12-23)
+  scrambleIdx = 13;
+  for (let i = 12; i < 24; i++) {
+    const piece = hexCode[scrambleIdx];
+    const isCorner = ['1', '3', '5', '7', '9', 'b', 'd', 'f'].includes(piece.toLowerCase());
+    shapeArray[i] = isCorner ? 1 : 0;
+    scrambleIdx++;
+  }
+  
+  const slots = pleaseBuildClustersFromThisShapeArray(shapeArray);
+  const pieceAssignments = pleaseParseScrambleAssignmentsFromHexCode(hexCode, slots);
+  
+  // Calculate dimensions
+  const svgSize = size;
+  const unit10vh = size * 0.4;
+  const centerX = svgSize / 2;
+  const centerY = svgSize / 2;
+  
+  const radiusInner = 0;
+  const radiusOuter = unit10vh * 0.7;
+  const radiusApex = radiusOuter * 1.366025404;
+  const ringRadius = radiusOuter + (unit10vh * 0.4);
+  
+  const strokeWidth = 0; // No strokes for label-only view
+  
+  const centerToCenterDistance = ringRadius * (2 + ringDistance / 100);
+  const marginLeft = centerToCenterDistance - svgSize;
+  let htmlOutput = `<div style="display: flex; align-items: center; pointer-events: none;">`;
+  
+  // LEFT SVG (top layer)
+  htmlOutput += `<svg width="${svgSize}" height="${svgSize}" viewBox="0 0 ${svgSize} ${svgSize}" style="pointer-events: none;">`;
+  
+  const leftLayerAngles = Array.from({ length: 12 }, (_, j) => 90 + j * 30);
+  
+  slots.forEach(slot => {
+    if (slot.startLetter < 12) {
+      const piece = pieceAssignments[slot.label];
+      const angle = gimmeTheAngleForThisSlotPlease(slot, leftLayerAngles);
+      const labelText = pieceLabels && pieceLabels[piece.toLowerCase()] ? pieceLabels[piece.toLowerCase()] : null;
+      
+      if (labelText) {
+        const labelRadius = radiusOuter * 0.65;
+        const labelPos = polarToCartesianButWithFunnyName(centerX, centerY, labelRadius, angle);
+        const fontSize = radiusOuter * 0.20;
+        htmlOutput += `<text x="${labelPos.x}" y="${labelPos.y}" text-anchor="middle" dominant-baseline="middle" fill="white" stroke="black" stroke-width="3" paint-order="stroke" font-size="${fontSize}" font-weight="bold" font-family="Arial, sans-serif">${labelText}</text>`;
+      }
+    }
+  });
+  
+  htmlOutput += `</svg>`;
+  
+  // RIGHT SVG (bottom layer)
+  htmlOutput += `<svg width="${svgSize}" height="${svgSize}" viewBox="0 0 ${svgSize} ${svgSize}" style="margin-left: ${marginLeft}px; pointer-events: none;">`;
+  
+  const rightLayerAngles = Array.from({ length: 12 }, (_, j) => 300 + j * 30);
+  
+  slots.forEach(slot => {
+    if (slot.startLetter >= 12) {
+      const piece = pieceAssignments[slot.label];
+      const angle = gimmeTheAngleForThisSlotPlease(slot, rightLayerAngles);
+      const labelText = pieceLabels && pieceLabels[piece.toLowerCase()] ? pieceLabels[piece.toLowerCase()] : null;
+      
+      if (labelText) {
+        const labelRadius = radiusOuter * 0.65;
+        const labelPos = polarToCartesianButWithFunnyName(centerX, centerY, labelRadius, angle);
+        const fontSize = radiusOuter * 0.20;
+        htmlOutput += `<text x="${labelPos.x}" y="${labelPos.y}" text-anchor="middle" dominant-baseline="middle" fill="white" stroke="black" stroke-width="3" paint-order="stroke" font-size="${fontSize}" font-weight="bold" font-family="Arial, sans-serif">${labelText}</text>`;
+      }
+    }
+  });
+  
+  htmlOutput += `</svg></div>`;
+  
+  return htmlOutput;
+}
 
-// For direct browser usage, attach to window
+// Export for use
 if (typeof window !== 'undefined') {
   window.Square1VisualizerLibraryWithSillyNames = {
     visualizeFromHexCodePlease,
     visualizeFromScrambleNotationPlease,
     visualizeFromSolutionNotationPlease,
     visualizeCubeShapeOutlinesPlease,
-    helpMeTrackAPiecePlease
+    helpMeTrackAPiecePlease,
+    visualizeLabelsOnlyPlease
   };
 }
 

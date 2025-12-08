@@ -2,6 +2,30 @@
 // CO Tracker Training Modal
 // ========================================
 
+// Shape indices that should never be mirrored (symmetric shapes)
+const NO_MIRROR_SHAPES = new Set([
+    // Barrel/Barrel
+    427, 442, 450, 464, 1452, 1467, 1475, 1489, 2032, 2047, 2055, 2069, 2922, 2937, 2945, 2959,
+    // Square/Square
+    1015, 1037, 2485, 2507,
+    // Kite/Kite
+    1168, 1173, 1179, 1184, 1521, 1526, 1532, 1537, 1985, 1990, 1996, 2001, 2338, 2343, 2349, 2354,
+    // Scallop/Scallop
+    95, 103, 117, 130, 136, 140, 678, 686, 700, 713, 719, 723, 1784, 1792, 1806, 1819, 1825, 1829, 2665, 2673, 2687, 2700, 2706, 2710, 3039, 3047, 3061, 3074, 3080, 3084, 3409, 3417, 3431, 3444, 3450, 3454,
+    // Shield/Shield
+    343, 347, 364, 369, 379, 384, 588, 592, 609, 614, 624, 629, 1869, 1873, 1890, 1895, 1905, 1910, 2123, 2127, 2144, 2149, 2159, 2164, 2829, 2833, 2850, 2855, 2865, 2870, 3133, 3137, 3154, 3159, 3169, 3174,
+    // Muffin/Muffin
+    533, 544, 549, 565, 1350, 1361, 1366, 1382, 1604, 1615, 1620, 1636, 2774, 2785, 2790, 2806,
+    // Right Pawn/Right Pawn
+    639, 641, 661, 676, 870, 872, 892, 907, 2273, 2275, 2295, 2310, 3246, 3248, 3268, 3283,
+    // Left Pawn/Left Pawn
+    219, 233, 254, 260, 1201, 1215, 1236, 1242, 2724, 2738, 2759, 2765, 3086, 3100, 3121, 3127,
+    // Left Fist/Left Fist
+    486, 492, 502, 509, 513, 514, 950, 956, 966, 973, 977, 978, 1557, 1563, 1573, 1580, 1584, 1585, 2079, 2085, 2095, 2102, 2106, 2107, 2374, 2380, 2390, 2397, 2401, 2402, 2432, 2438, 2448, 2455, 2459, 2460,
+    // Right Fist/Right Fist
+    1062, 1063, 1067, 1074, 1084, 1089, 1120, 1121, 1125, 1132, 1142, 1147, 1415, 1416, 1420, 1427, 1437, 1442, 1937, 1938, 1942, 1949, 1959, 1964, 2532, 2533, 2537, 2544, 2554, 2559, 2885, 2886, 2890, 2897, 2907, 2912
+]);
+
 let currentTrainingCardIdx = null;
 let currentTrainingCaseIdx = null;
 let trainingTimerRunning = false;
@@ -91,8 +115,8 @@ function createCOTrackerTrainingModal() {
                     <div id="trainingScrambleImage">Loading...</div>
                 </div>
                 <div id="trainingTimer" style="font-size:5rem;font-weight:600;font-family:'Courier New',monospace;color:#2d3748;letter-spacing:4px;">0.000</div>
-                <button id="trainingPeekBtn" title="Peek at Reference Scheme (Hold to peek or drag to move)" 
-                        style="position:fixed;bottom:5vh;right:5vh;width:48px;height:48px;border:2px solid #333;background:#fff;border-radius:50%;cursor:move;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);z-index:10;touch-action:none;">
+                <button id="trainingPeekBtn" title="Peek at Reference Scheme (Click to toggle)" 
+                        style="position:fixed;bottom:5vh;right:5vh;width:48px;height:48px;border:2px solid #333;background:#fff;border-radius:50%;cursor:move;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);z-index:10;touch-action:none;transition:background-color 0.2s,border-color 0.2s;">
                     <img src="res/eye.svg" style="width:24px;height:24px;pointer-events:none;">
                 </button>
             </div>
@@ -122,21 +146,12 @@ function createCOTrackerTrainingModal() {
     let currentX = 0;
     let currentY = 0;
 
-    let peekTimeout = null;
-
     peekBtn.addEventListener('mousedown', (e) => {
         e.stopPropagation();
         dragStartTime = Date.now();
         dragStartX = e.clientX - currentX;
         dragStartY = e.clientY - currentY;
         isDragging = false;
-        
-        // Start peeking after a short delay if not dragging
-        peekTimeout = setTimeout(() => {
-            if (!isDragging) {
-                startPeeking();
-            }
-        }, 150);
     });
 
     peekBtn.addEventListener('touchstart', (e) => {
@@ -147,13 +162,6 @@ function createCOTrackerTrainingModal() {
         dragStartX = touch.clientX - currentX;
         dragStartY = touch.clientY - currentY;
         isDragging = false;
-        
-        // Start peeking after a short delay if not dragging
-        peekTimeout = setTimeout(() => {
-            if (!isDragging) {
-                startPeeking();
-            }
-        }, 150);
     });
 
     document.addEventListener('mousemove', (e) => {
@@ -166,10 +174,8 @@ function createCOTrackerTrainingModal() {
             
             if (deltaX > 5 || deltaY > 5) {
                 if (!isDragging) {
-                    // Just started dragging - clear peek timeout and start peeking
-                    clearTimeout(peekTimeout);
+                    // Just started dragging
                     isDragging = true;
-                    startPeeking();
                 }
                 currentX = e.clientX - dragStartX;
                 currentY = e.clientY - dragStartY;
@@ -189,10 +195,8 @@ function createCOTrackerTrainingModal() {
             
             if (deltaX > 5 || deltaY > 5) {
                 if (!isDragging) {
-                    // Just started dragging - clear peek timeout and start peeking
-                    clearTimeout(peekTimeout);
+                    // Just started dragging
                     isDragging = true;
-                    startPeeking();
                 }
                 currentX = touch.clientX - dragStartX;
                 currentY = touch.clientY - dragStartY;
@@ -203,32 +207,41 @@ function createCOTrackerTrainingModal() {
 
     peekBtn.addEventListener('mouseup', (e) => {
         e.stopPropagation();
-        clearTimeout(peekTimeout);
+        const wasDragging = isDragging;
         dragStartTime = 0;
-        
-        // Always stop peeking on release
-        stopPeeking();
         isDragging = false;
+        
+        // Only toggle peek if not dragging
+        if (!wasDragging) {
+            if (trainingPeeking) {
+                stopPeeking();
+            } else {
+                startPeeking();
+            }
+        }
     });
 
     peekBtn.addEventListener('touchend', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        clearTimeout(peekTimeout);
+        const wasDragging = isDragging;
         dragStartTime = 0;
-        
-        // Always stop peeking on release
-        stopPeeking();
         isDragging = false;
+        
+        // Only toggle peek if not dragging
+        if (!wasDragging) {
+            if (trainingPeeking) {
+                stopPeeking();
+            } else {
+                startPeeking();
+            }
+        }
     });
 
     document.addEventListener('mouseup', () => {
         const modal = document.getElementById('coTrackerTrainingModal');
         if (modal && modal.style.display !== 'none') {
-            clearTimeout(peekTimeout);
-            if (dragStartTime > 0 || isDragging) {
-                stopPeeking();
-            }
+            // Don't auto-stop peeking on document mouseup anymore
         }
         dragStartTime = 0;
         isDragging = false;
@@ -237,10 +250,7 @@ function createCOTrackerTrainingModal() {
     document.addEventListener('touchend', () => {
         const modal = document.getElementById('coTrackerTrainingModal');
         if (modal && modal.style.display !== 'none') {
-            clearTimeout(peekTimeout);
-            if (dragStartTime > 0 || isDragging) {
-                stopPeeking();
-            }
+            // Don't auto-stop peeking on document touchend anymore
         }
         dragStartTime = 0;
         isDragging = false;
@@ -329,6 +339,7 @@ function closeCOTrackerTrainingModal() {
 
     trainingPreGeneratedScrambles = [];
     trainingTimerElapsed = 0;
+    trainingOriginalImage = '';
     currentTrainingCardIdx = null;
     currentTrainingCaseIdx = null;
 }
@@ -349,6 +360,24 @@ function openTrainingSettingsModal() {
             dividerColor: '#7a0000',
             circleColor: 'transparent'
         };
+    }
+
+    // Check if current case has a symmetric shape
+    let isSymmetricShape = false;
+    if (currentTrainingCardIdx !== null && currentTrainingCaseIdx !== null) {
+        try {
+            const card = STATE.cards[currentTrainingCardIdx];
+            const caseItem = card.cases[currentTrainingCaseIdx];
+            let solution = caseItem.solution || '';
+            const expandedSolution = window.ScrambleNormalizer.normalizeScramble(solution);
+            const scramble = pleaseInvertThisScrambleForSolutionVisualization(expandedSolution);
+            const cubeState = applyScrambleToCubePlease(scramble);
+            const hexCode = pleaseEncodeMyCubeStateToHexNotation(cubeState);
+            const shapeIndex = hexToShapeIndex(hexCode);
+            isSymmetricShape = NO_MIRROR_SHAPES.has(shapeIndex);
+        } catch (e) {
+            console.error('Error checking shape symmetry:', e);
+        }
     }
 
     modal.innerHTML = `
@@ -384,7 +413,7 @@ function openTrainingSettingsModal() {
                         Lock Orientation
                     </label>
                 </div>
-                <div class="settings-group" style="display:${trainingSettings.lockOrientation ? 'none' : 'block'};" id="allowMirrorContainer">
+                <div class="settings-group" style="display:${trainingSettings.lockOrientation || isSymmetricShape ? 'none' : 'block'};" id="allowMirrorContainer">
                     <label class="settings-label">
                         <input type="checkbox" ${trainingSettings.allowMirror ? 'checked' : ''} 
                                onchange="updateTrainingAllowMirror(this.checked)"
@@ -574,12 +603,23 @@ function generateNextTrainingScrambleData() {
         
         // Apply RBL transformation if lock orientation is off
         let finalHex = result.randomHex;
+        let rul = 0, rdl = 0;
+        let mirrorApplied = false;
+        
         if (!trainingSettings.lockOrientation) {
-            finalHex = applyRBLToHex(finalHex);
+            const rblResult = applyRBLToHex(finalHex);
+            finalHex = rblResult.hex;
+            rul = rblResult.rul;
+            rdl = rblResult.rdl;
             
-            // Apply mirror transformation if allowed
-            if (trainingSettings.allowMirror && Math.random() < 0.5) {
+            // Check if this is a symmetric shape
+            const shapeIndex = hexToShapeIndex(finalHex);
+            const isSymmetric = NO_MIRROR_SHAPES.has(shapeIndex);
+            
+            // Apply mirror transformation if allowed and not symmetric
+            if (trainingSettings.allowMirror && !isSymmetric && Math.random() < 0.5) {
                 finalHex = applyMirrorToHex(finalHex);
+                mirrorApplied = true;
             }
         }
 
@@ -643,7 +683,13 @@ function generateNextTrainingScrambleData() {
             text: scrambleText,
             image: scrambleImage,
             hex: finalHex,
-            result: result
+            result: {
+                ...result,
+                rblApplied: !trainingSettings.lockOrientation,
+                rul: rul,
+                rdl: rdl,
+                mirrorApplied: mirrorApplied
+            }
         };
     } catch (error) {
         console.error('Error generating training scramble:', error);
@@ -672,7 +718,23 @@ function displayNextTrainingScramble() {
         textEl.innerHTML = coloredHtml.replace(/\n/g, '<br>');
         textEl.style.fontSize = trainingSettings.scrambleTextSize + 'px';
 
-        document.getElementById('trainingScrambleImage').innerHTML = scrambleData.image;
+        // Store the original image
+        trainingOriginalImage = scrambleData.image;
+        
+        // If peeking is active, regenerate the peek view for the new scramble
+        if (trainingPeeking) {
+            // Turn off peeking first to reset state
+            const wasPeeking = trainingPeeking;
+            trainingPeeking = false;
+            document.getElementById('trainingScrambleImage').innerHTML = scrambleData.image;
+            
+            // Turn peeking back on with the new scramble
+            if (wasPeeking) {
+                setTimeout(() => startPeeking(), 50);
+            }
+        } else {
+            document.getElementById('trainingScrambleImage').innerHTML = scrambleData.image;
+        }
 
         // Add to history
         trainingScrambleHistory.push(scrambleData);
@@ -708,7 +770,21 @@ function previousTrainingScramble() {
     textEl.innerHTML = coloredHtml.replace(/\n/g, '<br>');
     textEl.style.fontSize = trainingSettings.scrambleTextSize + 'px';
 
-    document.getElementById('trainingScrambleImage').innerHTML = scrambleData.image;
+    // Store the original image
+    trainingOriginalImage = scrambleData.image;
+    
+    // If peeking is active, regenerate the peek view for this scramble
+    if (trainingPeeking) {
+        const wasPeeking = trainingPeeking;
+        trainingPeeking = false;
+        document.getElementById('trainingScrambleImage').innerHTML = scrambleData.image;
+        
+        if (wasPeeking) {
+            setTimeout(() => startPeeking(), 50);
+        }
+    } else {
+        document.getElementById('trainingScrambleImage').innerHTML = scrambleData.image;
+    }
 }
 
 function nextTrainingScrambleManual() {
@@ -797,7 +873,18 @@ function startPeeking() {
     trainingPeeking = true;
 
     const imageContainer = document.getElementById('trainingScrambleImage');
-    trainingOriginalImage = imageContainer.innerHTML;
+    const peekBtn = document.getElementById('trainingPeekBtn');
+    
+    // Store original image if not already stored
+    if (!trainingOriginalImage) {
+        trainingOriginalImage = imageContainer.innerHTML;
+    }
+    
+    // Add visual feedback to button
+    if (peekBtn) {
+        peekBtn.style.backgroundColor = '#333';
+        peekBtn.style.borderColor = '#555';
+    }
 
     try {
         const currentData = trainingScrambleHistory[trainingCurrentHistoryIndex];
@@ -810,6 +897,26 @@ function startPeeking() {
 
         if (!effectiveTrackedPieces || effectiveTrackedPieces.length === 0) {
             return; // No tracked pieces, nothing to show
+        }
+
+        // Get the original solution/algorithm from the case
+        let solution = caseItem.solution || '';
+        const expandedSolution = window.ScrambleNormalizer.normalizeScramble(solution);
+        const originalScramble = pleaseInvertThisScrambleForSolutionVisualization(expandedSolution);
+        
+        // Convert original scramble to hex
+        const originalCubeState = applyScrambleToCubePlease(originalScramble);
+        let originalHex = pleaseEncodeMyCubeStateToHexNotation(originalCubeState);
+
+        // Apply the SAME RBL transformation to original hex
+        const originalData = currentData.result;
+        if (originalData && originalData.rblApplied) {
+            originalHex = applyRBL(originalHex, originalData.rul, originalData.rdl);
+        }
+
+        // Apply the SAME mirror transformation to original hex
+        if (originalData && originalData.mirrorApplied) {
+            originalHex = applyMirrorToHex(originalHex);
         }
 
         const colorScheme = trainingSettings.colorScheme || {
@@ -833,12 +940,25 @@ function startPeeking() {
             });
         }
 
-        // Show complex labeled image of current scramble
-        const referenceHtml = window.Square1VisualizerLibraryWithSillyNames.visualizeFromHexCodePlease(
-            currentData.hex, trainingSettings.scrambleImageSize, colorScheme, 5, STATE.settings.enableLabels, pieceLabels
+        // Generate unlabeled image of current scramble (randomized)
+        const baseImage = window.Square1VisualizerLibraryWithSillyNames.visualizeFromHexCodePlease(
+            currentData.hex, trainingSettings.scrambleImageSize, colorScheme, 5, false, null
         );
 
-        imageContainer.innerHTML = referenceHtml;
+        // Generate label-only overlay from original hex (with transformations applied)
+        const labelOverlay = window.Square1VisualizerLibraryWithSillyNames.visualizeLabelsOnlyPlease(
+            originalHex, trainingSettings.scrambleImageSize, 5, pieceLabels
+        );
+
+        // Combine: base image with label overlay on top
+        imageContainer.innerHTML = `
+            <div style="position: relative; display: inline-block;">
+                ${baseImage}
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+                    ${labelOverlay}
+                </div>
+            </div>
+        `;
     } catch (e) {
         console.error('Error generating reference scheme:', e);
     }
@@ -849,7 +969,15 @@ function stopPeeking() {
     trainingPeeking = false;
 
     const imageContainer = document.getElementById('trainingScrambleImage');
+    const peekBtn = document.getElementById('trainingPeekBtn');
+    
     imageContainer.innerHTML = trainingOriginalImage;
+    
+    // Remove visual feedback from button
+    if (peekBtn) {
+        peekBtn.style.backgroundColor = '#fff';
+        peekBtn.style.borderColor = '#333';
+    }
 }
 
 function openTrainingInstructionModal() {
@@ -879,7 +1007,7 @@ function openTrainingInstructionModal() {
                 <h4 style="margin-bottom:10px;">Peek at Reference Scheme:</h4>
                 <ul style="padding-left:20px;margin-bottom:20px;">
                     <li style="margin-bottom:10px;"><strong>Eye Button:</strong> The floating eye button can be dragged anywhere on screen for your convenience</li>
-                    <li style="margin-bottom:10px;"><strong>Quick tap/click</strong> the eye button to toggle the reference scheme view</li>
+                    <li style="margin-bottom:10px;"><strong>Click/tap</strong> the eye button to toggle the reference scheme on or off</li>
                     <li style="margin-bottom:10px;"><strong>Hold Backspace</strong> to temporarily view the traced reference scheme (release to hide)</li>
                     <li style="margin-bottom:10px;">The reference shows your labeled pieces on the current scramble, not the (0,0) state</li>
                 </ul>
@@ -961,10 +1089,14 @@ function applyRBLToHex(hexScramble) {
         const rdl = validRotations.bottom[Math.floor(Math.random() * validRotations.bottom.length)];
         
         // Apply RBL
-        return applyRBL(hexScramble, rul, rdl);
+        return {
+            hex: applyRBL(hexScramble, rul, rdl),
+            rul: rul,
+            rdl: rdl
+        };
     } catch (e) {
         console.error('Error applying RBL:', e);
-        return hexScramble;
+        return { hex: hexScramble, rul: 0, rdl: 0 };
     }
 }
 
@@ -1005,7 +1137,18 @@ function getShapeIndexFromHex(hexScramble) {
 
 function getValidRBLForShape(shapeIndex) {
     const VALID_ROTATIONS = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
-    const ALL_ONES_ALLOWED = [0, 2, 4, 6, -4, -2];
+    
+    // Define restricted patterns with their allowed rotations
+    const RESTRICTED_PATTERNS = {
+        '111111111111': [0],
+        '011011011011': [0, 1],
+        '110110110110': [0, -1],
+        '001100110011': [0, -2],
+        '110011001100': [0, 2],
+        '011110011110': [1, -1, -3],
+        '001111001111': [1, 2, -2],
+        '110011110011': [2, 3, -2]
+    };
     
     const shapeValue = pleaseSaveAllValidShapeIndicesHereThankYou[shapeIndex];
     const s24 = shapeValue.toString(2).padStart(24, '0');
@@ -1013,8 +1156,12 @@ function getValidRBLForShape(shapeIndex) {
     const bottom = s24.slice(12, 24);
     
     const getValidRotations = (layer) => {
-        if (layer === '111111111111') return [...ALL_ONES_ALLOWED];
+        // Check if this layer matches a restricted pattern
+        if (RESTRICTED_PATTERNS[layer]) {
+            return [...RESTRICTED_PATTERNS[layer]];
+        }
         
+        // Otherwise, find all valid rotations
         const valid = [];
         for (const r of VALID_ROTATIONS) {
             const rotated = rotate12(layer, r);
