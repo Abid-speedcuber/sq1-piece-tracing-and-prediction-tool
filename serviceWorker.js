@@ -1,7 +1,7 @@
 // Service Worker for SQ1 Piece Tracing and Prediction Tool
 // Version 1.0.0
 
-const CACHE_NAME = 'sq1-co-tracker-v1.0.0';
+const CACHE_NAME = 'oblp v-1.0.4';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',

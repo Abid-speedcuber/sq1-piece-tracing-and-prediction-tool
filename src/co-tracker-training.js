@@ -482,16 +482,42 @@ function updateTrainingTextSize(size) {
 function updateTrainingImageSize(size) {
     trainingSettings.scrambleImageSize = size;
     saveTrainingSettings();
+    
+    // Store peek state
+    const wasPeeking = trainingPeeking;
+    
+    // Turn off peeking temporarily
+    if (trainingPeeking) {
+        trainingPeeking = false;
+        const peekBtn = document.getElementById('trainingPeekBtn');
+        if (peekBtn) {
+            peekBtn.style.backgroundColor = '#fff';
+            peekBtn.style.borderColor = '#333';
+        }
+    }
+    
     // Regenerate current scramble with new size
     if (trainingCurrentHistoryIndex >= 0 && trainingScrambleHistory[trainingCurrentHistoryIndex]) {
         const currentData = trainingScrambleHistory[trainingCurrentHistoryIndex];
         regenerateTrainingImageWithSize(currentData);
+        
+        // Update the original image reference
+        trainingOriginalImage = currentData.image;
+        
+        // Update the display
+        document.getElementById('trainingScrambleImage').innerHTML = currentData.image;
     }
+    
     // Regenerate pre-generated scrambles with new size
     trainingPreGeneratedScrambles = trainingPreGeneratedScrambles.map(scrambleData => {
         regenerateTrainingImageWithSize(scrambleData);
         return scrambleData;
     });
+    
+    // Restore peek state if it was on
+    if (wasPeeking) {
+        setTimeout(() => startPeeking(), 50);
+    }
 }
 
 function updateTrainingColor(colorKey, value) {
