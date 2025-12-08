@@ -125,7 +125,6 @@ function normalizeScrambleFormat(input) {
  */
 function normalizeInput(str) {
     return str
-        .replace(/[ ]/g, "")
         .replace(/\\/g, "/")
         .replace(/\+\+/g, "+")
         .trim();
@@ -141,8 +140,6 @@ function decodeScramble(str) {
     
     console.log('=== DECODE START ===');
     console.log('Input string:', str);
-    console.log('Input length:', str.length);
-    console.log('Char codes:', [...str].map((c, i) => `[${i}]='${c}' (${c.charCodeAt(0)})`));
     
     // Define letter mappings (case-insensitive)
     const letterMap = {
@@ -154,10 +151,16 @@ function decodeScramble(str) {
         'T': '2', 'C': '2'
     };
     
+    // Define digit mappings for 7, 8, 9
+    const digitMap = {
+        '7': '-5',
+        '8': '-4',
+        '9': '-3'
+    };
+    
     // First pass: normalize all apostrophe types to standard '
     let normalized = str.replace(/[''`']/g, "'");
     console.log('After normalization:', normalized);
-    console.log('Normalized char codes:', [...normalized].map((c, i) => `[${i}]='${c}' (${c.charCodeAt(0)})`));
     
     let result = '';
     let i = 0;
@@ -166,83 +169,71 @@ function decodeScramble(str) {
         const char = normalized[i];
         const upperChar = char.toUpperCase();
         
-        console.log(`\n[${i}] Processing: '${char}' (${char.charCodeAt(0)})`);
+        console.log(`\n[${i}] Processing: '${char}'`);
+        
+        // Check for minus sign BEFORE digit
+        if (char === '-' && i + 1 < normalized.length && /\d/.test(normalized[i + 1])) {
+            const nextDigit = normalized[i + 1];
+            console.log(`  → Found minus before digit: ${nextDigit}`);
+            
+            // Check if next digit is 7, 8, or 9
+            if (digitMap[nextDigit]) {
+                // -7 = 5, -8 = 4, -9 = 3 (flip the sign)
+                const mappedValue = digitMap[nextDigit]; // e.g., "-5"
+                const flipped = mappedValue.substring(1); // Remove the minus, so "-5" becomes "5"
+                result += flipped;
+                console.log(`  → Minus + ${nextDigit} → ${flipped}`);
+                i += 2; // Skip both minus and digit
+                continue;
+            } else {
+                // Regular digit with minus, keep the minus
+                result += '-';
+                console.log(`  → Minus kept`);
+                i++;
+                continue;
+            }
+        }
         
         // Check if it's a DIGIT
         if (/\d/.test(char)) {
-            const digit = char;
-            console.log(`  → Found digit: ${digit}`);
-            
-            // LOOK AHEAD for prime or minus
-            if (i + 1 < normalized.length) {
-                const nextChar = normalized[i + 1];
-                console.log(`  → Next char: '${nextChar}' (${nextChar.charCodeAt(0)})`);
-                
-                if (nextChar === "'" || nextChar === '-') {
-                    const num = parseInt(digit);
-                    console.log(`  → PRIME DETECTED! Negating ${digit}`);
-                    
-                    // Special case: 6' = 6, 0' = 0
-                    if (num === 6 || num === 0) {
-                        result += digit;
-                        console.log(`  → Special case (6 or 0), keeping: ${digit}`);
-                    } else {
-                        result += '-' + digit;
-                        console.log(`  → Output: -${digit}`);
-                    }
-                    
-                    i += 2; // Skip digit AND prime/minus
-                    continue;
-                }
+            // Check if it's 7, 8, or 9 (special negative shortcuts)
+            if (digitMap[char]) {
+                result += digitMap[char];
+                console.log(`  → Digit ${char} → ${digitMap[char]}`);
+            } else {
+                result += char;
+                console.log(`  → Digit: ${char}`);
             }
-            
-            result += digit;
-            console.log(`  → No prime, output: ${digit}`);
             i++;
         }
         // Check if it's a LETTER we recognize
         else if (letterMap[upperChar]) {
-            console.log(`  → Found letter: ${upperChar} → ${letterMap[upperChar]}`);
-            
-            // LOOK AHEAD for prime or minus
-            let isPrime = false;
-            
-            if (i + 1 < normalized.length) {
-                const nextChar = normalized[i + 1];
-                console.log(`  → Next char: '${nextChar}' (${nextChar.charCodeAt(0)})`);
-                
-                // Accept: ' (apostrophe), - (minus), ` (backtick)
-                if (nextChar === "'" || nextChar === "`" || nextChar === '-') {
-                    isPrime = true;
-                    console.log(`  → PRIME DETECTED!`);
-                }
-            }
-            
             const baseValue = letterMap[upperChar];
-            
-            // Apply negation for prime (except W/B which stay 6)
-            if (isPrime) {
-                if (upperChar === 'W' || upperChar === 'B') {
-                    result += '6';
-                    console.log(`  → W/B with prime, output: 6`);
-                } else {
-                    result += '-' + baseValue;
-                    console.log(`  → Output: -${baseValue}`);
-                }
-                i += 2; // Skip letter AND prime/minus
-            } else {
-                result += baseValue;
-                console.log(`  → No prime, output: ${baseValue}`);
-                i++; // Just skip letter
-            }
+            result += baseValue;
+            console.log(`  → Letter ${upperChar} → ${baseValue}`);
+            i++;
         }
-        // Keep everything else (slashes, parentheses, commas, spaces)
+        // Check if it's a prime/apostrophe
+        else if (char === "'") {
+            result += "'";
+            console.log(`  → Prime kept`);
+            i++;
+        }
+        // Check if it's a standalone minus sign (not before a digit)
+        else if (char === '-') {
+            result += '-';
+            console.log(`  → Minus kept (standalone)`);
+            i++;
+        }
+        // Keep structural characters
+        else if (char === '/' || char === '(' || char === ')' || char === ',' || char === ' ') {
+            result += char;
+            console.log(`  → Structural char: '${char}'`);
+            i++;
+        }
+        // Skip everything else
         else {
-            console.log(`  → Other char, keeping: '${char}'`);
-            // Skip apostrophes that weren't consumed (shouldn't happen, but safety)
-            if (char !== "'") {
-                result += char;
-            }
+            console.log(`  → Skipped`);
             i++;
         }
     }
@@ -269,25 +260,77 @@ function parseSets(str) {
     const hasLeadingSlash = str.trimStart().startsWith('/');
     const hasTrailingSlash = str.trimEnd().endsWith('/');
     
-    // Extract all INDIVIDUAL DIGITS (including negative signs)
-    let numbers = [];
+    // STEP 1: Parse into character array
+    let chars = [...str];
+    
+    // STEP 2: Remove only whitespace
+    chars = chars.filter(c => c !== ' ');
+    
+    // STEP 3: Process minus signs and primes
+    let processed = [];
     let i = 0;
     
-    while (i < str.length) {
-        // Skip non-numeric characters except minus
-        if (str[i] === '-') {
-            // Check if next character is a digit
-            if (i + 1 < str.length && /\d/.test(str[i + 1])) {
-                numbers.push(-parseInt(str[i + 1]));
-                i += 2; // Skip both minus and digit
+    while (i < chars.length) {
+        const char = chars[i];
+        
+        if (char === '-') {
+            // Find next number
+            let j = i + 1;
+            while (j < chars.length && !(/\d/.test(chars[j]))) {
+                j++;
+            }
+            
+            if (j < chars.length) {
+                // Found a number, mark it as negative
+                processed.push('-' + chars[j]);
+                // Skip everything up to and including the number
+                i = j + 1;
             } else {
+                // No number found, skip the minus
                 i++;
             }
-        } else if (/\d/.test(str[i])) {
-            numbers.push(parseInt(str[i]));
+        } else if (char === "'") {
+            // Prime: negate previous number
+            if (processed.length > 0) {
+                const last = processed[processed.length - 1];
+                if (/^-?\d+$/.test(last)) {
+                    const num = parseInt(last);
+                    // Special case: 6' = 6, 0' = 0
+                    if (num === 0) {
+                        processed[processed.length - 1] = '0';
+                    } else if (Math.abs(num) === 6) {
+                        processed[processed.length - 1] = '6';
+                    } else if (num > 0) {
+                        processed[processed.length - 1] = '-' + num;
+                    } else {
+                        // Already negative, make positive
+                        processed[processed.length - 1] = Math.abs(num).toString();
+                    }
+                }
+            }
+            i++;
+        } else if (/\d/.test(char)) {
+            processed.push(char);
+            i++;
+        } else if (char === '/' || char === '(' || char === ')' || char === ',') {
+            processed.push(char);
             i++;
         } else {
+            // Skip unknown characters
             i++;
+        }
+    }
+    
+    // STEP 4: No additional cleaning needed, processed array is ready
+    let cleaned = processed;
+    
+    // STEP 5: Extract numbers only (no slashes or other chars)
+    console.log('Processed array:', processed);
+    console.log('Cleaned array:', cleaned);
+    let numbers = [];
+    for (let item of cleaned) {
+        if (/^-?\d+$/.test(item)) {
+            numbers.push(parseInt(item));
         }
     }
     
