@@ -460,11 +460,6 @@ function openVariableModal() {
         }
     };
 
-    modal.onclick = (e) => {
-        if (e.target === modal) {
-            window.closeVariableModal(modal);
-        }
-    };
 }
 
 function cleanupVariableModalFunctions() {

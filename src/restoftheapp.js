@@ -19,8 +19,8 @@ const STATE = {
             { hex: 'b', pieceCode: 'DFR', color: '#FFC68F', label: '3' },
             { hex: 'c', pieceCode: 'DL', color: '#FF808F', label: '8' },
             { hex: 'd', pieceCode: 'DLF', color: '#FF978F', label: '1' },
-            { hex: 'e', pieceCode: 'DB', color: '#FF4747', label: '7' },
-            { hex: 'f', pieceCode: 'DLB', color: '#FF6969', label: '6' }
+            { hex: 'e', pieceCode: 'DB', color: '#FF4747', label: '6' },
+            { hex: 'f', pieceCode: 'DLB', color: '#FF6969', label: '7' }
         ],
         enableLabels: true
     },
@@ -103,8 +103,8 @@ function loadState() {
                 { hex: 'b', pieceCode: 'DFR', color: '#F5DEB3', label: 'F' },
                 { hex: 'c', pieceCode: 'DL', color: '#E8D4A0', label: '7' },
                 { hex: 'd', pieceCode: 'DLF', color: '#E8D4A0', label: 'G' },
-                { hex: 'e', pieceCode: 'DB', color: '#FFFFE0', label: '8' },
-                { hex: 'f', pieceCode: 'DLB', color: '#FFFFE0', label: 'H' }
+                { hex: 'e', pieceCode: 'DB', color: '#FFFFE0', label: '6' },
+                { hex: 'f', pieceCode: 'DLB', color: '#FFFFE0', label: '7' }
             ];
 
             // If we have fewer than 16 mappings, reset to defaults

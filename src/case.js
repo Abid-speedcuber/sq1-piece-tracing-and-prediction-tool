@@ -603,6 +603,10 @@ function openCaseEditModal(cardIdx, caseIdx) {
         saveState();
         modal.remove();
         renderCases(cardIdx);
+        // Update the card preview in the main grid
+        const searchInput = document.getElementById('cardSearchInput');
+        const searchQuery = searchInput ? searchInput.value : '';
+        renderCards(searchQuery);
         // Cleanup
         delete window.updateEditInputType;
         delete window.updateEditSolution;
@@ -655,11 +659,6 @@ function openCaseEditModal(cardIdx, caseIdx) {
         });
     };
 
-    modal.onclick = (e) => {
-        if (e.target === modal) {
-            window.cancelCaseEditModal();
-        }
-    };
 }
 
 function toggleOverrideTracking(cardIdx, caseIdx, enabled) {
@@ -953,12 +952,12 @@ function openTrainingSelectionModal(cardIdx, caseIdx) {
     modal.style.display = 'block';
 
     modal.innerHTML = `
-        <div class="modal-content" style="max-width:400px;">
+        <div class="modal-content" style="max-width:400px;height:auto;">
             <div class="modal-header">
                 <h3>Select Training Type</h3>
                 <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body" style="padding:20px;">
                 <div style="display:flex;flex-direction:column;gap:10px;">
                     <button class="btn btn-primary" onclick="this.closest('.modal').remove(); openCOTrackerTrainingModal(${cardIdx}, ${caseIdx});" 
                             style="padding:12px;font-size:14px;text-align:left;display:flex;align-items:center;justify-content:space-between;">

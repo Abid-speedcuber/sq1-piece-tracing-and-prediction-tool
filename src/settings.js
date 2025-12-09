@@ -102,6 +102,10 @@ function openColorMappingModal() {
     window.saveColorMappings = function () {
         saveState();
         modal.remove();
+        // Update all card previews
+        const searchInput = document.getElementById('cardSearchInput');
+        const searchQuery = searchInput ? searchInput.value : '';
+        renderCards(searchQuery);
     };
 
     window.discardColorMappings = function () {
@@ -140,9 +144,22 @@ function openDefaultTrackedPiecesModal() {
             const borderColor = isTracked ? '#333' : '#ccc';
             const fontWeight = isTracked ? '600' : '400';
 
+            // Calculate text color based on background brightness
+            let textColor = '#000';
+            if (isTracked && mapping) {
+                const rgb = mapping.color.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+                if (rgb) {
+                    const r = parseInt(rgb[1], 16) / 255;
+                    const g = parseInt(rgb[2], 16) / 255;
+                    const b = parseInt(rgb[3], 16) / 255;
+                    const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                    textColor = luminance > 0.5 ? '#000' : '#fff';
+                }
+            }
+            
             html += `
                         <button onclick="toggleDefaultTrackedPiece('${piece}')" 
-                                style="padding:12px;border:2px solid ${borderColor};background:${bgColor};cursor:pointer;font-size:13px;font-weight:${fontWeight};transition:all 0.2s;">
+                                style="padding:12px;border:2px solid ${borderColor};background:${bgColor};color:${textColor};cursor:pointer;font-size:13px;font-weight:${fontWeight};transition:all 0.2s;">
                             ${piece}
                         </button>
                     `;
@@ -175,6 +192,10 @@ function openDefaultTrackedPiecesModal() {
     window.saveDefaultTrackedPieces = function () {
         saveState();
         modal.remove();
+        // Update all card previews
+        const searchInput = document.getElementById('cardSearchInput');
+        const searchQuery = searchInput ? searchInput.value : '';
+        renderCards(searchQuery);
     };
 
     window.discardDefaultTrackedPieces = function () {
@@ -198,7 +219,15 @@ function openDefaultTrackedPiecesModal() {
 
 
 function exportData() {
-    const dataStr = JSON.stringify(STATE, null, 2);
+    // Include training settings from localStorage
+    const exportData = {
+        ...STATE,
+        trainingSettings: loadTrainingSettings(),
+        memoTrainingSettings: JSON.parse(localStorage.getItem('sq1MemoTrainingSettings') || '{}'),
+        memoSelectedCases: JSON.parse(localStorage.getItem('sq1MemoSelectedCases') || '[]')
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -215,6 +244,24 @@ function importData(input) {
     reader.onload = (e) => {
         try {
             const imported = JSON.parse(e.target.result);
+            
+            // Import training settings if present
+            if (imported.trainingSettings) {
+                localStorage.setItem('sq1TrainingSettings', JSON.stringify(imported.trainingSettings));
+                delete imported.trainingSettings;
+            }
+            
+            if (imported.memoTrainingSettings) {
+                localStorage.setItem('sq1MemoTrainingSettings', JSON.stringify(imported.memoTrainingSettings));
+                delete imported.memoTrainingSettings;
+            }
+            
+            if (imported.memoSelectedCases) {
+                localStorage.setItem('sq1MemoSelectedCases', JSON.stringify(imported.memoSelectedCases));
+                delete imported.memoSelectedCases;
+            }
+            
+            // Import main state
             Object.assign(STATE, imported);
             saveState();
             renderCards();
