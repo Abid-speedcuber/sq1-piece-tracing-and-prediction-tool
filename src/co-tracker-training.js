@@ -321,6 +321,9 @@ function openCOTrackerTrainingModal(cardIdx, caseIdx) {
     displayNextTrainingScramble();
 
     modal.style.display = 'flex';
+    
+    // Update peek button visibility based on labels setting
+    updatePeekButtonVisibility();
 }
 
 function closeCOTrackerTrainingModal() {
@@ -501,11 +504,14 @@ function updateTrainingImageSize(size) {
         const currentData = trainingScrambleHistory[trainingCurrentHistoryIndex];
         regenerateTrainingImageWithSize(currentData);
         
-        // Update the original image reference
+        // Update the original image reference with the NEW regenerated image
         trainingOriginalImage = currentData.image;
         
-        // Update the display
-        document.getElementById('trainingScrambleImage').innerHTML = currentData.image;
+        // Update the display with the correct regenerated image
+        const imageContainer = document.getElementById('trainingScrambleImage');
+        if (imageContainer) {
+            imageContainer.innerHTML = currentData.image;
+        }
     }
     
     // Regenerate pre-generated scrambles with new size
@@ -583,20 +589,18 @@ function regenerateTrainingImageWithSize(scrambleData) {
             circleColor: 'transparent'
         };
 
-        if (!effectiveTrackedPieces || effectiveTrackedPieces.length === 0) {
-            scrambleImage = window.Square1VisualizerLibraryWithSillyNames.visualizeFromHexCodePlease(
-                scrambleData.hex, trainingSettings.scrambleImageSize, colorScheme, 5
-            );
-        } else {
-            scrambleImage = window.Square1VisualizerLibraryWithSillyNames.visualizeFromHexCodePlease(
-                scrambleData.hex, trainingSettings.scrambleImageSize, colorScheme, 5
-            );
-        }
+        // Always generate the full colored cube visualization
+        scrambleImage = window.Square1VisualizerLibraryWithSillyNames.visualizeFromHexCodePlease(
+            scrambleData.hex, trainingSettings.scrambleImageSize, colorScheme, 5
+        );
 
-        document.getElementById('trainingScrambleImage').innerHTML = scrambleImage;
+        // Update the scramble data's image reference
         scrambleData.image = scrambleImage;
+        
+        // Do NOT update the DOM here - let the caller handle that
     } catch (e) {
         console.error('Error regenerating image:', e);
+        scrambleData.image = '<div style="color:#e53e3e;padding:10px;font-size:11px;">Error regenerating image</div>';
     }
 }
 
@@ -771,6 +775,9 @@ function displayNextTrainingScramble() {
             trainingScrambleHistory.shift();
             trainingCurrentHistoryIndex--;
         }
+        
+        // Update peek button visibility based on labels setting
+        updatePeekButtonVisibility();
     }
 
     // Generate new scramble in background
@@ -811,6 +818,9 @@ function previousTrainingScramble() {
     } else {
         document.getElementById('trainingScrambleImage').innerHTML = scrambleData.image;
     }
+    
+    // Update peek button visibility based on labels setting
+    updatePeekButtonVisibility();
 }
 
 function nextTrainingScrambleManual() {
@@ -1003,6 +1013,22 @@ function stopPeeking() {
     if (peekBtn) {
         peekBtn.style.backgroundColor = '#fff';
         peekBtn.style.borderColor = '#333';
+    }
+}
+
+function updatePeekButtonVisibility() {
+    const peekBtn = document.getElementById('trainingPeekBtn');
+    if (!peekBtn) return;
+    
+    // Check if labels are enabled in settings
+    if (STATE.settings.enableLabels) {
+        peekBtn.style.display = 'flex';
+    } else {
+        peekBtn.style.display = 'none';
+        // If peeking is active when labels are disabled, stop peeking
+        if (trainingPeeking) {
+            stopPeeking();
+        }
     }
 }
 

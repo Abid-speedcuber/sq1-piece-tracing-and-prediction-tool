@@ -27,7 +27,7 @@ function openSettingsModal() {
                         <div class="settings-group">
                             <label class="settings-label">
                                 <input type="checkbox" ${STATE.settings.enableLabels ? 'checked' : ''} 
-                                       onchange="STATE.settings.enableLabels = this.checked; saveState();" 
+                                       onchange="STATE.settings.enableLabels = this.checked; saveState(); if (typeof updatePeekButtonVisibility === 'function') updatePeekButtonVisibility();" 
                                        style="margin-right:5px;">
                                 Enable Letter/Number Labels
                             </label>
@@ -58,7 +58,11 @@ function openColorMappingModal() {
     const originalColorMappings = JSON.parse(JSON.stringify(STATE.settings.colorMappings));
 
     let mappingsHtml = '';
-    STATE.settings.colorMappings.forEach((m, i) => {
+    const displayOrder = ['UBL', 'UB', 'URB', 'UR', 'UFR', 'UF', 'ULF', 'UL', 'DLF', 'DF', 'DFR', 'DR', 'DRB', 'DB', 'DLB', 'DL'];
+    displayOrder.forEach(pieceCode => {
+        const i = STATE.settings.colorMappings.findIndex(m => m.pieceCode === pieceCode);
+        if (i === -1) return;
+        const m = STATE.settings.colorMappings[i];
         mappingsHtml += `
                     <div class="color-mapping-row" style="display:grid;grid-template-columns:60px 1fr 80px;gap:8px;align-items:center;padding:8px;border-bottom:1px solid #eee;">
                         <div style="font-weight:600;font-size:13px;">${m.pieceCode || 'N/A'}</div>
@@ -123,7 +127,7 @@ function openDefaultTrackedPiecesModal() {
     modal.style.display = 'block';
 
     const pieces = ['UB', 'UBL', 'UL', 'ULF', 'UF', 'UFR', 'UR', 'URB', 'DR', 'DRB', 'DF', 'DFR', 'DL', 'DLF', 'DB', 'DLB'];
-
+    
     // Backup original state
     const originalTrackedPieces = [...STATE.settings.defaultTrackedPieces];
 

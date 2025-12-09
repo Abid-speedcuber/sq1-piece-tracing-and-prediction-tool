@@ -16,6 +16,16 @@
 </head>
 
 <body>
+    <div id="loadingScreen" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:#1a1a1a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;font-family:Arial,sans-serif;">
+        <div style="text-align:center;color:#fff;margin-bottom:30px;">
+            <h1 style="font-size:32px;font-weight:700;margin:0 0 10px 0;letter-spacing:2px;">PCOP & OBLP</h1>
+            <p style="font-size:16px;margin:0;color:#aaa;">Piece Tracer with OBLP Games</p>
+            <p style="font-size:12px;margin:10px 0 0 0;color:#666;">by Abid Ibn Ashraf</p>
+        </div>
+        <div style="width:300px;height:8px;background:#333;border-radius:4px;overflow:hidden;position:relative;">
+            <div id="loadingBar" style="width:0%;height:100%;background:#4CAF50;transition:none;"></div>
+        </div>
+    </div>
     <div class="topbar">
         <div class="topbar-left">SQ1 Piece Tracing and Prediction Tool</div>
         <div class="topbar-right">
@@ -65,7 +75,46 @@
     <script src="src/case.js"></script>
     <script src="src/restoftheapp.js"></script>
     <script src="src/co-tracker-training.js"></script>
+    <script src="src/memoMarathon.js"></script>
     <script>
+        // Loading screen logic
+        const loadingScreen = document.getElementById('loadingScreen');
+        const loadingBar = document.getElementById('loadingBar');
+        let progress = 0;
+        
+        let isPaused = false;
+        let pauseTimer = null;
+        
+        const loadingInterval = setInterval(() => {
+            if (isPaused) return;
+            
+            // Unsmooth progress jumps
+            const jump = Math.random() * 12 + 4; // Random jump between 4-16%
+            progress = Math.min(progress + jump, 100);
+            loadingBar.style.width = progress + '%';
+            
+            // Pause at 80% for realistic feel
+            if (progress >= 80 && progress < 100 && !pauseTimer) {
+                isPaused = true;
+                pauseTimer = setTimeout(() => {
+                    isPaused = false;
+                    progress = 80; // Resume from 80%
+                }, 600); // Pause for 600ms
+            }
+            
+            if (progress >= 100) {
+                clearInterval(loadingInterval);
+                if (pauseTimer) clearTimeout(pauseTimer);
+                setTimeout(() => {
+                    loadingScreen.style.opacity = '0';
+                    loadingScreen.style.transition = 'opacity 0.3s';
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                    }, 300);
+                }, 100);
+            }
+        }, 100); // Update every 100ms for ~2.5 sec total duration
+        
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/serviceWorker.js')

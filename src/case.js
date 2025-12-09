@@ -140,7 +140,7 @@ function renderCases(cardIdx) {
                 <button class="btn ${caseItem.showActualState ? 'btn-primary' : ''}" onclick="toggleShowActualState(${cardIdx}, ${actualIdx})" style="padding:6px 12px;font-size:13px;">Show Actual State</button>
                 <button class="btn" onclick="openTrackPiecesPopup(event, ${cardIdx}, ${actualIdx})" style="padding:6px 12px;font-size:13px;">Change Tracked Pieces</button>
                 <button class="btn" onclick="openReferenceSchemePopup(event, ${cardIdx}, ${actualIdx})" style="padding:6px 12px;font-size:13px;">Show Reference Scheme</button>
-                <button class="btn" onclick="openCOTrackerTrainingModal(${cardIdx}, ${actualIdx})" style="padding:6px 12px;font-size:13px;">Train This Case</button>
+                <button class="btn" onclick="openTrainingSelectionModal(${cardIdx}, ${actualIdx})" style="padding:6px 12px;font-size:13px;">Train This Case</button>
             </div>
         </div>
     </div>
@@ -170,6 +170,11 @@ function addCase(cardIdx) {
     card.cases.push(newCase);
     saveState();
     renderCases(cardIdx);
+    
+    // Update the card preview count in the main grid
+    const searchInput = document.getElementById('cardSearchInput');
+    const searchQuery = searchInput ? searchInput.value : '';
+    renderCards(searchQuery);
 
     // Open edit modal for the newly created case
     const newCaseIdx = card.cases.length - 1;
@@ -186,7 +191,9 @@ function deleteCase(cardIdx, caseIdx) {
     saveState();
     renderCases(cardIdx);
     // Update the card preview count in the main grid
-    renderCards();
+    const searchInput = document.getElementById('cardSearchInput');
+    const searchQuery = searchInput ? searchInput.value : '';
+    renderCards(searchQuery);
 }
 
 function generateCaseImage(cardIdx, caseIdx) {
@@ -444,7 +451,7 @@ function openCaseEditModal(cardIdx, caseIdx) {
                                 <input type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="edit-solution-input" class="algo-input" 
                                        placeholder="${currentInputType === 'scramble' ? 'Enter scramble (will be inverted)' : 'Enter solution (use *varName* or <varName>)'}" 
                                        value="${currentSolution}"
-                                       oninput="console.log('RAW INPUT:', this.value); console.log('CHAR CODES:', [...this.value].map((c,i) => '['+i+'] '+c+' ('+c.charCodeAt(0)+')').join(' | ')); window.updateEditSolution(this.value)"
+                                       oninput="window.updateEditSolution(this.value)"
                                        style="width:100%;padding:8px;border:1px solid #ccc;font-size:13px;margin-bottom:6px;">
                                 <div id="edit-normalized-preview" style="font-family:monospace;font-size:10px;color:#999;word-break:break-all;">
                                     ${highlightVariablesInNormalized(currentSolution)}
@@ -632,6 +639,10 @@ function openCaseEditModal(cardIdx, caseIdx) {
             saveState();
             modal.remove();
             renderCases(cardIdx);
+            // Update the card preview count in the main grid
+            const searchInput = document.getElementById('cardSearchInput');
+            const searchQuery = searchInput ? searchInput.value : '';
+            renderCards(searchQuery);
             // Cleanup
             delete window.updateEditInputType;
             delete window.updateEditSolution;
@@ -934,6 +945,42 @@ function openReferenceSchemePopup(event, cardIdx, caseIdx) {
         }
     };
     setTimeout(() => document.addEventListener('click', closePopup), 100);
+}
+
+function openTrainingSelectionModal(cardIdx, caseIdx) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'block';
+
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header">
+                <h3>Select Training Type</h3>
+                <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    <button class="btn btn-primary" onclick="this.closest('.modal').remove(); openCOTrackerTrainingModal(${cardIdx}, ${caseIdx});" 
+                            style="padding:12px;font-size:14px;text-align:left;display:flex;align-items:center;justify-content:space-between;">
+                        <span>Solves</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+                    <button class="btn btn-primary" onclick="this.closest('.modal').remove(); openMemoTrainingModal();" 
+                            style="padding:12px;font-size:14px;text-align:left;display:flex;align-items:center;justify-content:space-between;">
+                        <span>Memo Marathon</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
 }
 
 function switchCaseTab(btn, targetId) {

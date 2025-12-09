@@ -138,9 +138,6 @@ function normalizeInput(str) {
 function decodeScramble(str) {
     if (!str) return '';
     
-    console.log('=== DECODE START ===');
-    console.log('Input string:', str);
-    
     // Define letter mappings (case-insensitive)
     const letterMap = {
         'U': '3', 'D': '3',
@@ -159,9 +156,7 @@ function decodeScramble(str) {
     };
     
     // First pass: normalize all apostrophe types to standard '
-    let normalized = str.replace(/[''`']/g, "'");
-    console.log('After normalization:', normalized);
-    
+    let normalized = str.replace(/[''`']/g, "'");    
     let result = '';
     let i = 0;
     
@@ -169,12 +164,9 @@ function decodeScramble(str) {
         const char = normalized[i];
         const upperChar = char.toUpperCase();
         
-        console.log(`\n[${i}] Processing: '${char}'`);
-        
         // Check for minus sign BEFORE digit
         if (char === '-' && i + 1 < normalized.length && /\d/.test(normalized[i + 1])) {
             const nextDigit = normalized[i + 1];
-            console.log(`  → Found minus before digit: ${nextDigit}`);
             
             // Check if next digit is 7, 8, or 9
             if (digitMap[nextDigit]) {
@@ -182,13 +174,11 @@ function decodeScramble(str) {
                 const mappedValue = digitMap[nextDigit]; // e.g., "-5"
                 const flipped = mappedValue.substring(1); // Remove the minus, so "-5" becomes "5"
                 result += flipped;
-                console.log(`  → Minus + ${nextDigit} → ${flipped}`);
                 i += 2; // Skip both minus and digit
                 continue;
             } else {
                 // Regular digit with minus, keep the minus
                 result += '-';
-                console.log(`  → Minus kept`);
                 i++;
                 continue;
             }
@@ -199,10 +189,8 @@ function decodeScramble(str) {
             // Check if it's 7, 8, or 9 (special negative shortcuts)
             if (digitMap[char]) {
                 result += digitMap[char];
-                console.log(`  → Digit ${char} → ${digitMap[char]}`);
             } else {
                 result += char;
-                console.log(`  → Digit: ${char}`);
             }
             i++;
         }
@@ -210,37 +198,28 @@ function decodeScramble(str) {
         else if (letterMap[upperChar]) {
             const baseValue = letterMap[upperChar];
             result += baseValue;
-            console.log(`  → Letter ${upperChar} → ${baseValue}`);
             i++;
         }
         // Check if it's a prime/apostrophe
         else if (char === "'") {
             result += "'";
-            console.log(`  → Prime kept`);
             i++;
         }
         // Check if it's a standalone minus sign (not before a digit)
         else if (char === '-') {
             result += '-';
-            console.log(`  → Minus kept (standalone)`);
             i++;
         }
         // Keep structural characters
         else if (char === '/' || char === '(' || char === ')' || char === ',' || char === ' ') {
             result += char;
-            console.log(`  → Structural char: '${char}'`);
             i++;
         }
         // Skip everything else
         else {
-            console.log(`  → Skipped`);
             i++;
         }
     }
-    
-    console.log('\n=== DECODE END ===');
-    console.log('Final result:', result);
-    console.log('==================\n');
     
     return result;
 }
@@ -325,8 +304,6 @@ function parseSets(str) {
     let cleaned = processed;
     
     // STEP 5: Extract numbers only (no slashes or other chars)
-    console.log('Processed array:', processed);
-    console.log('Cleaned array:', cleaned);
     let numbers = [];
     for (let item of cleaned) {
         if (/^-?\d+$/.test(item)) {
