@@ -22,7 +22,15 @@ const STATE = {
             { hex: 'e', pieceCode: 'DB', color: '#FF4747', label: '6' },
             { hex: 'f', pieceCode: 'DLB', color: '#FF6969', label: '7' }
         ],
-        enableLabels: true
+        enableLabels: true,
+        personalization: {
+            hideActualStateButton: false,
+            hideChangeTrackedPiecesButton: false,
+            hideReferenceSchemeButton: false,
+            swapAlgorithmDisplay: true,
+            enableMobileView: false,
+            hideSearchBar: false
+        }
     },
     editMode: false,
     history: [],
@@ -123,6 +131,18 @@ function loadState() {
         if (!STATE.settings.defaultTrackedPieces) {
             STATE.settings.defaultTrackedPieces = [];
         }
+
+        // Ensure personalization settings exist
+        if (!STATE.settings.personalization) {
+            STATE.settings.personalization = {
+                hideActualStateButton: false,
+                hideChangeTrackedPiecesButton: false,
+                hideReferenceSchemeButton: false,
+                swapAlgorithmDisplay: true,
+                enableMobileView: false,
+                hideSearchBar: false
+            };
+        }
     }
 }
 
@@ -138,7 +158,7 @@ function renderCards(searchQuery = '') {
         return;
     }
 
-    searchContainer.style.display = 'flex';
+    searchContainer.style.display = STATE.settings.personalization.hideSearchBar ? 'none' : 'flex';
     grid.style.display = 'grid';
     empty.style.display = 'none';
     grid.innerHTML = '';

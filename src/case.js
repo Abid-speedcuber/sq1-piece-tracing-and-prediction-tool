@@ -105,7 +105,66 @@ function renderCases(cardIdx) {
         const normalizedSolution = window.ScrambleNormalizer.normalizeScramble(caseItem.solution || '');
         const setupMoves = pleaseInvertThisScrambleForSolutionVisualization(normalizedSolution);
 
-        caseCard.innerHTML = `
+        const isMobileView = STATE.settings.personalization.enableMobileView;
+        const swapAlgs = STATE.settings.personalization.swapAlgorithmDisplay;
+        const hideActualState = STATE.settings.personalization.hideActualStateButton;
+        const hideChangePieces = STATE.settings.personalization.hideChangeTrackedPiecesButton;
+        const hideRefScheme = STATE.settings.personalization.hideReferenceSchemeButton;
+
+        const primaryAlg = swapAlgs ? highlightVariablesInNormalized(caseItem.solution || '') : (caseItem.solution || '<span style="color:#999;">No solution</span>');
+        const secondaryAlg = swapAlgs ? (caseItem.solution || '<span style="color:#999;">No solution</span>') : highlightVariablesInNormalized(caseItem.solution || '');
+        const primaryAlgSize = swapAlgs ? '10px' : '14px';
+        const secondaryAlgSize = swapAlgs ? '14px' : '10px';
+        const primaryAlgColor = swapAlgs ? '#999' : 'inherit';
+        const secondaryAlgColor = swapAlgs ? 'inherit' : '#999';
+
+        const buttonsHtml = `
+            ${!hideActualState ? `<button class="btn ${caseItem.showActualState ? 'btn-primary' : ''}" onclick="toggleShowActualState(${cardIdx}, ${actualIdx})" style="padding:6px 12px;font-size:13px;">Show Actual State</button>` : ''}
+            ${!hideChangePieces ? `<button class="btn" onclick="openTrackPiecesPopup(event, ${cardIdx}, ${actualIdx})" style="padding:6px 12px;font-size:13px;">Change Tracked Pieces</button>` : ''}
+            ${!hideRefScheme ? `<button class="btn" onclick="openReferenceSchemePopup(event, ${cardIdx}, ${actualIdx})" style="padding:6px 12px;font-size:13px;">Show Reference Scheme</button>` : ''}
+            <button class="btn" onclick="openTrainingSelectionModal(${cardIdx}, ${actualIdx})" style="padding:6px 12px;font-size:13px;">Train This Case</button>
+        `;
+
+        if (isMobileView) {
+            caseCard.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <strong style="font-size:16px;">Angle ${caseIdx + 1}</strong>
+        <button class="icon-btn" style="width:32px;height:32px;" onclick="toggleCaseEditMode(${cardIdx}, ${actualIdx})" title="Edit">
+            <img src="res/edit.svg" style="width:16px;height:16px;">
+        </button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:15px;">
+        <div style="display:flex;justify-content:center;">
+            <div id="case-image-${cardIdx}-${actualIdx}" style="display:flex;align-items:center;justify-content:center;">
+                ${caseItem.imageHtml || '<span style="color:#999;font-size:12px;">Generating...</span>'}
+            </div>
+        </div>
+        <div>
+            <div style="margin-bottom:4px;">
+                <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Algorithm:</div>
+                <div style="font-family:monospace;font-size:${primaryAlgSize};color:${primaryAlgColor};background:transparent;word-break:break-all;">
+                    ${primaryAlg}
+                </div>
+            </div>
+            <div style="margin-bottom:12px;">
+                <div style="font-family:monospace;font-size:${secondaryAlgSize};color:${secondaryAlgColor};word-break:break-all;">
+                    ${secondaryAlg}
+                </div>
+            </div>
+            <div style="margin-bottom:12px;padding-top:8px;border-top:1px solid #eee;">
+                <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Setup Moves:</div>
+                <div style="font-family:monospace;font-size:12px;color:#666;word-break:break-all;">
+                    ${setupMoves || '<span style="color:#999;">No setup moves</span>'}
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
+                ${buttonsHtml}
+            </div>
+        </div>
+    </div>
+`;
+        } else {
+            caseCard.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <strong style="font-size:16px;">Angle ${caseIdx + 1}</strong>
         <button class="icon-btn" style="width:32px;height:32px;" onclick="toggleCaseEditMode(${cardIdx}, ${actualIdx})" title="Edit">
@@ -121,13 +180,13 @@ function renderCases(cardIdx) {
         <div>
             <div style="margin-bottom:4px;">
                 <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Algorithm:</div>
-                <div style="font-family:monospace;font-size:14px;background:transparent;word-break:break-all;">
-                    ${caseItem.solution || '<span style="color:#999;">No solution</span>'}
+                <div style="font-family:monospace;font-size:${primaryAlgSize};color:${primaryAlgColor};background:transparent;word-break:break-all;">
+                    ${primaryAlg}
                 </div>
             </div>
             <div style="margin-bottom:12px;">
-                <div style="font-family:monospace;font-size:10px;color:#999;word-break:break-all;">
-                    ${highlightVariablesInNormalized(caseItem.solution || '')}
+                <div style="font-family:monospace;font-size:${secondaryAlgSize};color:${secondaryAlgColor};word-break:break-all;">
+                    ${secondaryAlg}
                 </div>
             </div>
             <div style="margin-bottom:12px;padding-top:8px;border-top:1px solid #eee;">
@@ -136,15 +195,13 @@ function renderCases(cardIdx) {
                     ${setupMoves || '<span style="color:#999;">No setup moves</span>'}
                 </div>
             </div>
-            <div style="display:flex;gap:8px;margin-top:12px;">
-                <button class="btn ${caseItem.showActualState ? 'btn-primary' : ''}" onclick="toggleShowActualState(${cardIdx}, ${actualIdx})" style="padding:6px 12px;font-size:13px;">Show Actual State</button>
-                <button class="btn" onclick="openTrackPiecesPopup(event, ${cardIdx}, ${actualIdx})" style="padding:6px 12px;font-size:13px;">Change Tracked Pieces</button>
-                <button class="btn" onclick="openReferenceSchemePopup(event, ${cardIdx}, ${actualIdx})" style="padding:6px 12px;font-size:13px;">Show Reference Scheme</button>
-                <button class="btn" onclick="openTrainingSelectionModal(${cardIdx}, ${actualIdx})" style="padding:6px 12px;font-size:13px;">Train This Case</button>
+            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+                ${buttonsHtml}
             </div>
         </div>
     </div>
 `;
+        }
         container.appendChild(caseCard);
 
         setTimeout(() => generateCaseImage(cardIdx, actualIdx), 100);

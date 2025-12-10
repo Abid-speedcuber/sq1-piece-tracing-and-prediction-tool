@@ -35,6 +35,7 @@ function openSettingsModal() {
                         <div class="settings-group">
                             <button class="btn btn-primary" style="width:100%;margin-bottom:8px;" onclick="this.closest('.modal').remove(); openColorMappingModal();">Configure Color Mappings</button>
                             <button class="btn btn-primary" style="width:100%;margin-bottom:8px;" onclick="this.closest('.modal').remove(); openDefaultTrackedPiecesModal();">Default Tracked Pieces</button>
+                            <button class="btn btn-primary" style="width:100%;margin-bottom:8px;" onclick="this.closest('.modal').remove(); openPersonalizationModal();">Personalization</button>
                         </div>
                         <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;">
                             <button class="btn" style="width:100%;margin-bottom:8px;" onclick="exportData()">Export Data</button>
@@ -217,6 +218,73 @@ function openDefaultTrackedPiecesModal() {
     modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
 }
 
+function openPersonalizationModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'block';
+
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:500px;">
+            <div class="modal-header">
+                <h3>Personalization</h3>
+                <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-group">
+                    <label class="settings-label">
+                        <input type="checkbox" ${STATE.settings.personalization.hideActualStateButton ? 'checked' : ''} 
+                               onchange="STATE.settings.personalization.hideActualStateButton = this.checked; saveState();" 
+                               style="margin-right:5px;">
+                        Hide "Show Actual State" Button
+                    </label>
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label">
+                        <input type="checkbox" ${STATE.settings.personalization.hideChangeTrackedPiecesButton ? 'checked' : ''} 
+                               onchange="STATE.settings.personalization.hideChangeTrackedPiecesButton = this.checked; saveState();" 
+                               style="margin-right:5px;">
+                        Hide "Change Tracked Pieces" Button
+                    </label>
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label">
+                        <input type="checkbox" ${STATE.settings.personalization.hideReferenceSchemeButton ? 'checked' : ''} 
+                               onchange="STATE.settings.personalization.hideReferenceSchemeButton = this.checked; saveState();" 
+                               style="margin-right:5px;">
+                        Hide "Show Reference Scheme" Button
+                    </label>
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label">
+                        <input type="checkbox" ${STATE.settings.personalization.swapAlgorithmDisplay ? 'checked' : ''} 
+                               onchange="STATE.settings.personalization.swapAlgorithmDisplay = this.checked; saveState();" 
+                               style="margin-right:5px;">
+                        Swap Input & Normalized Algorithm Display
+                    </label>
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label">
+                        <input type="checkbox" ${STATE.settings.personalization.enableMobileView ? 'checked' : ''} 
+                               onchange="STATE.settings.personalization.enableMobileView = this.checked; saveState();" 
+                               style="margin-right:5px;">
+                        Enable Mobile View (Vertical Layout)
+                    </label>
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label">
+                        <input type="checkbox" ${STATE.settings.personalization.hideSearchBar ? 'checked' : ''} 
+                               onchange="STATE.settings.personalization.hideSearchBar = this.checked; saveState(); renderCards();" 
+                               style="margin-right:5px;">
+                        Hide Search Bar on Home Screen
+                    </label>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+}
 
 function exportData() {
     // Include training settings from localStorage
