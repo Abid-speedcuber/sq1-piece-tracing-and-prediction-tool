@@ -311,9 +311,13 @@ function openCaseSelectionModal() {
         });
     });
 
-    function renderCaseTable() {
+    function renderCaseTable(searchQuery = '') {
+        const filteredCases = searchQuery 
+            ? allCases.filter(c => c.cardTitle.toLowerCase().includes(searchQuery.toLowerCase()))
+            : allCases;
+            
         let tableHtml = '';
-        allCases.forEach((caseData, idx) => {
+        filteredCases.forEach((caseData, idx) => {
             tableHtml += `
                 <tr>
                     <td style="text-align:center;">
@@ -328,7 +332,7 @@ function openCaseSelectionModal() {
                 </tr>
             `;
         });
-        return tableHtml;
+        return tableHtml || '<tr><td colspan="6" style="text-align:center;color:#999;padding:20px;">No cases found</td></tr>';
     }
 
     modal.innerHTML = `
@@ -338,6 +342,10 @@ function openCaseSelectionModal() {
                 <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
             </div>
             <div class="modal-body" style="overflow:auto;">
+                <div style="margin-bottom:15px;">
+                    <input type="text" id="memoCaseSearchInput" class="settings-input" placeholder="Search by card name..." 
+                           style="width:100%;padding:8px;margin-bottom:10px;">
+                </div>
                 <div style="margin-bottom:15px;display:flex;gap:10px;">
                     <button class="btn" onclick="selectAllCases()">Select All</button>
                     <button class="btn" onclick="deselectAllCases()">Deselect All</button>
@@ -368,6 +376,12 @@ function openCaseSelectionModal() {
 
     document.body.appendChild(modal);
 
+    // Add search functionality
+    document.getElementById('memoCaseSearchInput').addEventListener('input', (e) => {
+        const searchQuery = e.target.value.toLowerCase();
+        document.getElementById('caseSelectionTableBody').innerHTML = renderCaseTable(searchQuery);
+    });
+
     window.toggleCaseSelection = function(cardIdx, caseIdx, selected) {
         const key = `${cardIdx}-${caseIdx}`;
         if (selected) {
@@ -393,7 +407,8 @@ function openCaseSelectionModal() {
             caseData.selected = true;
         });
         saveMemoSelectedCases();
-        document.getElementById('caseSelectionTableBody').innerHTML = renderCaseTable();
+        const searchQuery = document.getElementById('memoCaseSearchInput').value.toLowerCase();
+        document.getElementById('caseSelectionTableBody').innerHTML = renderCaseTable(searchQuery);
     };
 
     window.deselectAllCases = function() {
@@ -402,7 +417,8 @@ function openCaseSelectionModal() {
             caseData.selected = false;
         });
         saveMemoSelectedCases();
-        document.getElementById('caseSelectionTableBody').innerHTML = renderCaseTable();
+        const searchQuery = document.getElementById('memoCaseSearchInput').value.toLowerCase();
+        document.getElementById('caseSelectionTableBody').innerHTML = renderCaseTable(searchQuery);
     };
 
     window.saveCaseSelection = function() {

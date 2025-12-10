@@ -40,6 +40,82 @@ let trainingCurrentHistoryIndex = -1;
 let trainingSettings = loadTrainingSettings();
 let trainingPeeking = false;
 let trainingOriginalImage = '';
+let trainingSelectedCases = [];
+
+function loadTrainingSelectedCases() {
+    const saved = localStorage.getItem('sq1TrainingSelectedCases');
+    if (saved) {
+        try {
+            trainingSelectedCases = JSON.parse(saved);
+        } catch (e) {
+            console.error('Error loading training selected cases:', e);
+            trainingSelectedCases = [];
+        }
+    }
+}
+
+function saveTrainingSelectedCases() {
+    localStorage.setItem('sq1TrainingSelectedCases', JSON.stringify(trainingSelectedCases));
+}
+
+function getTrainingTitleText() {
+    if (trainingSelectedCases.length === 0) {
+        return 'Select cases to train';
+    }
+    
+    // Pick a random case to show info
+    const randomKey = trainingSelectedCases[Math.floor(Math.random() * trainingSelectedCases.length)];
+    const [cardIdx, caseIdx] = randomKey.split('-').map(Number);
+    const card = STATE.cards[cardIdx];
+    const caseItem = card.cases[caseIdx];
+    
+    const caseName = card.title || 'Untitled';
+    const parity = caseItem.type === 'parity' ? 'Odd' : 'Even';
+    const orientation = caseItem.variant === 'original' ? 'Original' : 'Mirror';
+    
+    const showName = trainingSettings.showCaseName;
+    const showParity = trainingSettings.showParity;
+    const showOrientation = trainingSettings.showOrientation;
+    
+    // Count how many are true
+    const trueCount = [showName, showParity, showOrientation].filter(Boolean).length;
+    
+    if (trueCount === 0) {
+        return 'Training';
+    }
+    
+    if (trueCount === 1) {
+        if (showName) return `Case: ${caseName}`;
+        if (showParity) return `Parity: ${parity}`;
+        if (showOrientation) return `Orientation: ${orientation}`;
+    }
+    
+    // Build the parts array
+    const parts = [];
+    if (showName) parts.push(caseName);
+    
+    const subParts = [];
+    if (showParity) subParts.push(parity);
+    if (showOrientation) subParts.push(orientation);
+    
+    if (parts.length === 0) {
+        // Only parity and/or orientation
+        return `Training: ${subParts.join(', ')}`;
+    }
+    
+    if (subParts.length === 0) {
+        // Only case name
+        return `Training: ${parts[0]}`;
+    }
+    
+    if (subParts.length === 2) {
+        // All three or case name + both
+        return `Training: ${parts[0]} (${subParts.join(', ')})`;
+    }
+    
+    // Case name + one of parity/orientation
+    return `Training: ${parts[0]} (${subParts[0]})`;
+}
 
 function loadTrainingSettings() {
     const saved = localStorage.getItem('sq1TrainingSettings');
@@ -55,6 +131,9 @@ function loadTrainingSettings() {
         scrambleImageSize: 200,
         lockOrientation: true,
         allowMirror: false,
+        showCaseName: true,
+        showParity: true,
+        showOrientation: false,
         colorScheme: {
             topColor: '#000000',
             bottomColor: '#FFFFFF',
@@ -84,25 +163,19 @@ function createCOTrackerTrainingModal() {
 
     modal.innerHTML = `
         <div class="modal-content" style="width:100vw;height:100vh;max-width:100vw;margin:0;border:none;border-radius:0;display:flex;flex-direction:column;">
-            <div class="modal-header" style="background:#333;color:#fff;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <h3 style="color:#fff;margin:0;" id="trainingCaseTitle">Training: Case</h3>
-                    <button class="icon-btn" onclick="openTrainingInstructionModal()" title="Training Help" style="width:24px;height:24px;background:#555;">
-                        <img src="res/white-instruction.svg" style="width:12px;height:12px;">
-                    </button>
+            <div class="modal-header" style="background:#333;color:#fff;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;padding:12px 20px;">
+                <div style="display:flex;align-items:center;gap:15px;flex:1;">
+                    <h3 style="color:#fff;margin:0;font-size:16px;" id="trainingCaseTitle">${getTrainingTitleText()}</h3>
+                    <button onclick="openTrainingInstructionModal()" title="Instructions" style="background:none;border:1px solid #666;border-radius:50%;cursor:pointer;color:#ddd;font-size:12px;font-weight:bold;font-family:serif;width:20px;height:20px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.borderColor='#aaa';this.style.color='#fff'" onmouseout="this.style.borderColor='#666';this.style.color='#ddd'">i</button>
                 </div>
-                <div style="display:flex;gap:10px;">
-                    <button class="icon-btn" id="trainingPrevBtn" title="Previous scramble" style="background:#555;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" style="width:16px;height:16px;">
-                            <polyline points="15 18 9 12 15 6"></polyline>
-                        </svg>
-                    </button>
-                    <button class="icon-btn" id="trainingRefreshBtn" title="Regenerate scramble" style="background:#555;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" style="width:16px;height:16px;">
-                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
-                        </svg>
-                    </button>                   
-                    <button class="icon-btn" id="trainingSettingsBtn" title="Training Settings" style="background:#555;"><img src="res/trainingSettings.svg" style="width:16px;height:16px;">
+                <div style="display:flex;align-items:center;gap:15px;">
+                    <span onclick="window.openTrainingCaseSelectionModalFromHeader()" style="cursor:pointer;color:#aaa;font-size:13px;transition:all 0.2s;border:1px solid #555;padding:4px 10px;border-radius:4px;" onmouseover="this.style.color='#fff';this.style.borderColor='#777'" onmouseout="this.style.color='#aaa';this.style.borderColor='#555'">${trainingSelectedCases.length} case(s) selected</span>
+                    <span style="color:#555;">|</span>
+                    <span onclick="previousTrainingScramble()" style="cursor:pointer;color:#00bcd4;font-size:13px;transition:color 0.2s;margin-right:-8px;" onmouseover="this.style.color='#00e5ff'" onmouseout="this.style.color='#00bcd4'">previous</span>
+                    <span style="color:#555;margin:0 2px;">/</span>
+                    <span onclick="nextTrainingScrambleManual()" style="cursor:pointer;color:#00bcd4;font-size:13px;transition:color 0.2s;margin-left:-8px;" onmouseover="this.style.color='#00e5ff'" onmouseout="this.style.color='#00bcd4'">next</span>
+                    <span style="color:#ddd;margin-left:-4px;">scramble</span>
+                    <button class="icon-btn" id="trainingSettingsBtn" title="Training Settings" style="background:#444;width:32px;height:32px;border:1px solid #555;"><img src="res/trainingSettings.svg" style="width:16px;height:16px;">
                     </button>
                     <button class="close-btn" id="trainingCloseBtn" style="color:#fff;">×</button>
                 </div>
@@ -126,10 +199,10 @@ function createCOTrackerTrainingModal() {
     document.body.appendChild(modal);
 
     // Add event listeners
-    document.getElementById('trainingRefreshBtn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        nextTrainingScrambleManual();
-    });
+
+    window.openTrainingCaseSelectionModalFromHeader = function() {
+        openTrainingCaseSelectionModal();
+    };
 
     document.getElementById('trainingSettingsBtn').addEventListener('click', (e) => {
         e.stopPropagation();
@@ -256,11 +329,6 @@ function createCOTrackerTrainingModal() {
         isDragging = false;
     });
 
-    document.getElementById('trainingPrevBtn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        previousTrainingScramble();
-    });
-
     document.getElementById('trainingCloseBtn').addEventListener('click', (e) => {
         e.stopPropagation();
         closeCOTrackerTrainingModal();
@@ -278,7 +346,10 @@ function createCOTrackerTrainingModal() {
     timerZone.addEventListener('touchend', handleTrainingTimerTouchEnd);
 }
 
-function openCOTrackerTrainingModal(cardIdx, caseIdx) {
+function openCOTrackerTrainingModal(cardIdx = null, caseIdx = null) {
+    // Load selected cases
+    loadTrainingSelectedCases();
+    
     // Close any existing modal first
     const existingModal = document.getElementById('coTrackerTrainingModal');
     if (existingModal) {
@@ -286,8 +357,8 @@ function openCOTrackerTrainingModal(cardIdx, caseIdx) {
     }
 
     // Reset all state variables
-    currentTrainingCardIdx = null;
-    currentTrainingCaseIdx = null;
+    currentTrainingCardIdx = cardIdx;
+    currentTrainingCaseIdx = caseIdx;
     trainingTimerRunning = false;
     trainingTimerStartTime = 0;
     trainingTimerInterval = null;
@@ -304,14 +375,19 @@ function openCOTrackerTrainingModal(cardIdx, caseIdx) {
     createCOTrackerTrainingModal();
 
     const modal = document.getElementById('coTrackerTrainingModal');
-    const card = STATE.cards[cardIdx];
-    const caseItem = card.cases[caseIdx];
-
-    currentTrainingCardIdx = cardIdx;
-    currentTrainingCaseIdx = caseIdx;
-
+    
     // Set title
-    document.getElementById('trainingCaseTitle').textContent = `Training: ${card.title || 'Case'}`;
+    document.getElementById('trainingCaseTitle').textContent = getTrainingTitleText();
+
+    // Pre-generate 3 scrambles only if cases are selected
+    if (trainingSelectedCases.length === 0) {
+        // Show empty state message
+        document.getElementById('trainingScrambleText').innerHTML = '<span style="color:#999;">Select cases to begin training</span>';
+        document.getElementById('trainingScrambleImage').innerHTML = '<div style="color:#999;font-size:14px;">No cases selected</div>';
+        modal.style.display = 'flex';
+        updatePeekButtonVisibility();
+        return;
+    }
 
     // Pre-generate 3 scrambles
     for (let i = 0; i < 3; i++) {
@@ -406,6 +482,29 @@ function openTrainingSettingsModal() {
                                oninput="updateTrainingImageSize(parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px';"
                                style="flex:1;">
                         <span style="min-width:60px;text-align:right;">${trainingSettings.scrambleImageSize}px</span>
+                    </div>
+                </div>
+                <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;margin-top:15px;">
+                    <label class="settings-label">Display Options</label>
+                    <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+                        <label style="display:flex;align-items:center;gap:5px;">
+                            <input type="checkbox" ${trainingSettings.showCaseName ? 'checked' : ''} 
+                                   onchange="updateTrainingDisplayOption('showCaseName', this.checked)"
+                                   style="margin:0;">
+                            <span style="font-size:13px;">Show Case Name</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:5px;">
+                            <input type="checkbox" ${trainingSettings.showParity ? 'checked' : ''} 
+                                   onchange="updateTrainingDisplayOption('showParity', this.checked)"
+                                   style="margin:0;">
+                            <span style="font-size:13px;">Show Parity</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:5px;">
+                            <input type="checkbox" ${trainingSettings.showOrientation ? 'checked' : ''} 
+                                   onchange="updateTrainingDisplayOption('showOrientation', this.checked)"
+                                   style="margin:0;">
+                            <span style="font-size:13px;">Show Orientation</span>
+                        </label>
                     </div>
                 </div>
                 <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;margin-top:15px;">
@@ -553,6 +652,17 @@ function updateTrainingColor(colorKey, value) {
     });
 }
 
+function updateTrainingDisplayOption(option, value) {
+    trainingSettings[option] = value;
+    saveTrainingSettings();
+    
+    // Update title if training modal is open
+    const titleEl = document.getElementById('trainingCaseTitle');
+    if (titleEl) {
+        titleEl.textContent = getTrainingTitleText();
+    }
+}
+
 function updateTrainingLockOrientation(value) {
     trainingSettings.lockOrientation = value;
     saveTrainingSettings();
@@ -620,13 +730,22 @@ function formatScrambleWithColor(text) {
 
 function generateNextTrainingScrambleData() {
     try {
-        const card = STATE.cards[currentTrainingCardIdx];
-        const caseItem = card.cases[currentTrainingCaseIdx];
+        // Pick random case from selected cases
+        if (trainingSelectedCases.length === 0) {
+            throw new Error('No cases selected');
+        }
+        
+        const randomKey = trainingSelectedCases[Math.floor(Math.random() * trainingSelectedCases.length)];
+        const [cardIdx, caseIdx] = randomKey.split('-').map(Number);
+        
+        // Update current indices for reference
+        currentTrainingCardIdx = cardIdx;
+        currentTrainingCaseIdx = caseIdx;
+        
+        const card = STATE.cards[cardIdx];
+        const caseItem = card.cases[caseIdx];
 
         let solution = caseItem.solution || '';
-        if (caseItem.inputType === 'scramble') {
-            solution = pleaseInvertThisScrambleForSolutionVisualization(solution);
-        }
 
         // Generate training scramble
         const result = window.TrainingModule.generateTrainingScramble(solution);
@@ -738,6 +857,12 @@ function displayNextTrainingScramble() {
     const scrambleData = trainingPreGeneratedScrambles.shift();
 
     if (scrambleData) {
+        // Update title to reflect current case
+        const titleEl = document.getElementById('trainingCaseTitle');
+        if (titleEl) {
+            titleEl.textContent = getTrainingTitleText();
+        }
+        
         trainingCurrentScrambleText = scrambleData.text;
 
         // Format and wrap the scramble text
@@ -1030,6 +1155,185 @@ function updatePeekButtonVisibility() {
             stopPeeking();
         }
     }
+}
+
+function openTrainingCaseSelectionModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'block';
+
+    // Collect all cases
+    const allCases = [];
+    STATE.cards.forEach((card, cardIdx) => {
+        if (!card.cases) return;
+        card.cases.forEach((caseItem, caseIdx) => {
+            // Skip cases with no algorithm
+            if (!caseItem.solution || caseItem.solution.trim() === '' || caseItem.solution.toLowerCase() === 'no algorithm') {
+                return;
+            }
+            allCases.push({
+                cardIdx,
+                caseIdx,
+                cardTitle: card.title || 'Untitled',
+                parity: caseItem.type === 'parity' ? 'Odd' : 'Even',
+                orientation: caseItem.variant === 'original' ? 'Original' : 'Mirror',
+                algorithm: caseItem.solution || 'No algorithm',
+                selected: trainingSelectedCases.includes(`${cardIdx}-${caseIdx}`)
+            });
+        });
+    });
+
+    function renderCaseTable(searchQuery = '') {
+        const filteredCases = searchQuery 
+            ? allCases.filter(c => c.cardTitle.toLowerCase().includes(searchQuery.toLowerCase()))
+            : allCases;
+            
+        let tableHtml = '';
+        filteredCases.forEach((caseData) => {
+            tableHtml += `
+                <tr>
+                    <td style="text-align:center;">
+                        <input type="checkbox" ${caseData.selected ? 'checked' : ''} 
+                               onchange="window.toggleTrainingCaseSelection(${caseData.cardIdx}, ${caseData.caseIdx}, this.checked)">
+                    </td>
+                    <td>${caseData.cardTitle}</td>
+                    <td>${caseData.parity}</td>
+                    <td>${caseData.orientation}</td>
+                    <td>Angle ${caseData.caseIdx + 1}</td>
+                    <td style="font-family:monospace;font-size:11px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${caseData.algorithm}</td>
+                </tr>
+            `;
+        });
+        return tableHtml || '<tr><td colspan="6" style="text-align:center;color:#999;padding:20px;">No cases found</td></tr>';
+    }
+
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:90vw;max-height:90vh;">
+            <div class="modal-header">
+                <h3>Select Cases for Training</h3>
+                <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
+            </div>
+            <div class="modal-body" style="overflow:auto;">
+                <div style="margin-bottom:15px;">
+                    <input type="text" id="trainingCaseSearchInput" class="settings-input" placeholder="Search by card name..." 
+                           style="width:100%;padding:8px;margin-bottom:10px;">
+                </div>
+                <div style="margin-bottom:15px;display:flex;gap:10px;">
+                    <button class="btn" onclick="window.selectAllTrainingCases()">Select All</button>
+                    <button class="btn" onclick="window.deselectAllTrainingCases()">Deselect All</button>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="variable-table" style="min-width:800px;">
+                        <thead>
+                            <tr>
+                                <th style="width:60px;text-align:center;">Select</th>
+                                <th style="width:150px;">Card Name</th>
+                                <th style="width:80px;">Parity</th>
+                                <th style="width:100px;">Orientation</th>
+                                <th style="width:80px;">Angle</th>
+                                <th>Algorithm</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trainingCaseSelectionTableBody">
+                            ${renderCaseTable()}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top:15px;">
+                    <button class="btn btn-primary" onclick="window.saveTrainingCaseSelection()">Done</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Add search functionality
+    document.getElementById('trainingCaseSearchInput').addEventListener('input', (e) => {
+        const searchQuery = e.target.value.toLowerCase();
+        document.getElementById('trainingCaseSelectionTableBody').innerHTML = renderCaseTable(searchQuery);
+    });
+
+    window.toggleTrainingCaseSelection = function(cardIdx, caseIdx, selected) {
+        const key = `${cardIdx}-${caseIdx}`;
+        if (selected) {
+            if (!trainingSelectedCases.includes(key)) {
+                trainingSelectedCases.push(key);
+            }
+        } else {
+            const idx = trainingSelectedCases.indexOf(key);
+            if (idx > -1) {
+                trainingSelectedCases.splice(idx, 1);
+            }
+        }
+        saveTrainingSelectedCases();
+        
+        // Update the case in allCases array
+        const caseData = allCases.find(c => c.cardIdx === cardIdx && c.caseIdx === caseIdx);
+        if (caseData) {
+            caseData.selected = selected;
+        }
+    };
+
+    window.selectAllTrainingCases = function() {
+        trainingSelectedCases = [];
+        allCases.forEach(caseData => {
+            const key = `${caseData.cardIdx}-${caseData.caseIdx}`;
+            if (!trainingSelectedCases.includes(key)) {
+                trainingSelectedCases.push(key);
+            }
+            caseData.selected = true;
+        });
+        saveTrainingSelectedCases();
+        const searchQuery = document.getElementById('trainingCaseSearchInput').value.toLowerCase();
+        document.getElementById('trainingCaseSelectionTableBody').innerHTML = renderCaseTable(searchQuery);
+    };
+
+    window.deselectAllTrainingCases = function() {
+        trainingSelectedCases = [];
+        allCases.forEach(caseData => {
+            caseData.selected = false;
+        });
+        saveTrainingSelectedCases();
+        const searchQuery = document.getElementById('trainingCaseSearchInput').value.toLowerCase();
+        document.getElementById('trainingCaseSelectionTableBody').innerHTML = renderCaseTable(searchQuery);
+    };
+
+    window.saveTrainingCaseSelection = function() {
+        modal.remove();
+        
+        // Update training modal title and restart if it's open
+        const trainingModal = document.getElementById('coTrackerTrainingModal');
+        if (trainingModal && trainingModal.style.display !== 'none') {
+            if (trainingSelectedCases.length > 0) {
+                // Restart training with new selection
+                closeCOTrackerTrainingModal();
+                setTimeout(() => openCOTrackerTrainingModal(), 100);
+            } else {
+                // Update to show empty state
+                const titleEl = document.getElementById('trainingCaseTitle');
+                if (titleEl) {
+                    titleEl.textContent = getTrainingTitleText();
+                }
+                document.getElementById('trainingScrambleText').innerHTML = '<span style="color:#999;">Select cases to begin training</span>';
+                document.getElementById('trainingScrambleImage').innerHTML = '<div style="color:#999;font-size:14px;">No cases selected</div>';
+                const selectCasesSpan = document.querySelector('[onclick="window.openTrainingCaseSelectionModalFromHeader()"]');
+                if (selectCasesSpan) {
+                    selectCasesSpan.textContent = '0 case(s) selected';
+                }
+            }
+        }
+        
+        // Cleanup
+        delete window.toggleTrainingCaseSelection;
+        delete window.selectAllTrainingCases;
+        delete window.deselectAllTrainingCases;
+        delete window.saveTrainingCaseSelection;
+    };
+
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+    };
 }
 
 function openTrainingInstructionModal() {
