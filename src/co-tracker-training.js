@@ -42,7 +42,7 @@ let trainingPeeking = false;
 let trainingOriginalImage = '';
 let trainingSelectedCases = [];
 let trainingHoldStartTime = 0;
-const TIMER_HOLD_THRESHOLD = 300; // 300ms
+const TIMER_HOLD_THRESHOLD = 210; // 150ms
 
 function loadTrainingSelectedCases() {
     const saved = localStorage.getItem('sq1TrainingSelectedCases');
@@ -982,7 +982,7 @@ function handleTrainingTimerMouseDown() {
     const timerEl = document.getElementById('trainingTimer');
     if (!timerEl) return;
     if (trainingSettings.disableStartCue) {
-        timerEl.style.color = '#ffc107';
+        timerEl.style.color = '#22c55e';
     } else {
         timerEl.style.color = '#ef4444';
         // Start checking for threshold
@@ -1012,7 +1012,7 @@ function handleTrainingTimerMouseUp() {
         trainingIsHolding = false;
         timerEl.style.color = '#2d3748';
         
-        if (holdDuration >= TIMER_HOLD_THRESHOLD) {
+        if (trainingSettings.disableStartCue || holdDuration >= TIMER_HOLD_THRESHOLD) {
             startTrainingTimer();
         }
     }
@@ -1037,7 +1037,7 @@ function handleTrainingTimerTouchStart(e) {
     const timerEl = document.getElementById('trainingTimer');
     if (!timerEl) return;
     if (trainingSettings.disableStartCue) {
-        timerEl.style.color = '#ffc107';
+        timerEl.style.color = '#22c55e';
     } else {
         timerEl.style.color = '#ef4444';
         // Start checking for threshold
@@ -1065,10 +1065,10 @@ function handleTrainingTimerTouchEnd(e) {
         stopTrainingTimerOnly();
     } else if (trainingIsHolding) {
         const holdDuration = Date.now() - trainingHoldStartTime;
-        trainingIsHolding = false; 
+        trainingIsHolding = false;
         timerEl.style.color = '#2d3748';
         
-        if (holdDuration >= TIMER_HOLD_THRESHOLD) {
+        if (trainingSettings.disableStartCue || holdDuration >= TIMER_HOLD_THRESHOLD) {
             startTrainingTimer();
         }
     }
@@ -1475,7 +1475,7 @@ document.addEventListener('keydown', (e) => {
             const timerEl = document.getElementById('trainingTimer');
             trainingHoldStartTime = Date.now();
             if (trainingSettings.disableStartCue) {
-                timerEl.style.color = '#ffc107';
+                timerEl.style.color = '#22c55e';
             } else {
                 timerEl.style.color = '#ef4444';
                 // Start checking for threshold
@@ -1522,10 +1522,17 @@ document.addEventListener('keyup', (e) => {
                 trainingIsHolding = false;
                 timerEl.style.color = '#2d3748';
                 
-                if (holdDuration >= TIMER_HOLD_THRESHOLD) {
+                if (trainingSettings.disableStartCue || holdDuration >= TIMER_HOLD_THRESHOLD) {
                     startTrainingTimer();
                 }
             }
+        }
+    } else {
+        // Any other key stops the timer if running
+        if (trainingTimerRunning) {
+            e.preventDefault();
+            displayNextTrainingScramble();
+            stopTrainingTimerOnly();
         }
     }
 });
