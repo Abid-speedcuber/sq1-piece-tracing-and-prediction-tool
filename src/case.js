@@ -113,10 +113,10 @@ function renderCases(cardIdx) {
 
         const primaryAlg = swapAlgs ? highlightVariablesInNormalized(caseItem.solution || '') : (caseItem.solution || '<span style="color:#999;">No solution</span>');
         const secondaryAlg = swapAlgs ? (caseItem.solution || '<span style="color:#999;">No solution</span>') : highlightVariablesInNormalized(caseItem.solution || '');
-        const primaryAlgSize = swapAlgs ? '10px' : '14px';
-        const secondaryAlgSize = swapAlgs ? '14px' : '10px';
-        const primaryAlgColor = swapAlgs ? '#999' : 'inherit';
-        const secondaryAlgColor = swapAlgs ? 'inherit' : '#999';
+        const primaryAlgSize = swapAlgs ? '14px' : '14px';
+        const secondaryAlgSize = swapAlgs ? '10px' : '10px';
+        const primaryAlgColor = swapAlgs ? '#000' : 'inherit';
+        const secondaryAlgColor = swapAlgs ? '#999' : '#999';
 
         const buttonsHtml = `
             ${!hideActualState ? `<button class="btn ${caseItem.showActualState ? 'btn-primary' : ''}" onclick="toggleShowActualState(${cardIdx}, ${actualIdx})" style="padding:6px 12px;font-size:13px;">Show Actual State</button>` : ''}
@@ -515,6 +515,7 @@ function openCaseEditModal(cardIdx, caseIdx) {
                                 </div>
                             </div>
                             
+                            ${!STATE.settings.personalization.hideOverrideTrackedPieces ? `
                             <div style="margin-bottom:15px;">
                                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
                                     <input type="checkbox" id="edit-override-checkbox" ${currentOverride ? 'checked' : ''} 
@@ -526,6 +527,7 @@ function openCaseEditModal(cardIdx, caseIdx) {
                             <div id="edit-piece-grid-container" style="${currentOverride ? '' : 'opacity:0.4;pointer-events:none;'}">
                                 ${renderEditPieceGrid(currentCustomPieces)}
                             </div>
+                            ` : ''}
                             
                             <div style="margin-top:20px;display:flex;gap:10px;padding-top:15px;border-top:1px solid #ddd;">
                                 <button class="btn btn-primary" onclick="window.saveCaseEditModal()" style="flex:1;">Save</button>

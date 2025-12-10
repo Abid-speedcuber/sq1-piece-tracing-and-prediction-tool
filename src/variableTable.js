@@ -15,7 +15,8 @@ function showInputModal(title, message, defaultValue, onConfirm) {
                     </div>
                     <div class="modal-body">
                         <p style="margin-bottom:10px;">${message}</p>
-                        <input type="text" id="${tempId}-input" class="settings-input" value="${defaultValue}" style="margin-bottom:15px;">
+                        <input type="text" id="${tempId}-input" class="settings-input" value="${defaultValue}" style="margin-bottom:5px;">
+                        <div id="${tempId}-error" style="color:#e53e3e;font-size:12px;min-height:16px;margin-bottom:10px;"></div>
                         <button class="btn btn-primary" id="${tempId}-ok">OK</button>
                         <button class="btn" id="${tempId}-cancel2">Cancel</button>
                     </div>
@@ -24,6 +25,7 @@ function showInputModal(title, message, defaultValue, onConfirm) {
 
     document.body.appendChild(modal);
     const input = document.getElementById(tempId + '-input');
+    const errorDiv = document.getElementById(tempId + '-error');
     const okBtn = document.getElementById(tempId + '-ok');
     const cancelBtn = document.getElementById(tempId + '-cancel');
     const cancelBtn2 = document.getElementById(tempId + '-cancel2');
@@ -32,9 +34,22 @@ function showInputModal(title, message, defaultValue, onConfirm) {
     input.select();
 
     const handleOk = () => {
-        const value = input.value;
-        modal.remove();
-        onConfirm(value);
+        const value = input.value.trim();
+        if (value) {
+            // Check for duplicate card names
+            if (title === 'Card Title' || title === 'Case name') {
+                const duplicate = STATE.cards.some(card => card.title === value);
+                if (duplicate) {
+                    errorDiv.textContent = 'A case with this name already exists. Please choose a different name.';
+                    input.focus();
+                    input.select();
+                    return;
+                }
+            }
+            
+            modal.remove();
+            onConfirm(value);
+        }
     };
 
     const handleCancel = () => {

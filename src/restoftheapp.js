@@ -29,7 +29,9 @@ const STATE = {
             hideReferenceSchemeButton: false,
             swapAlgorithmDisplay: true,
             enableMobileView: false,
-            hideSearchBar: false
+            hideSearchBar: false,
+            hideOverrideTrackedPieces: true,
+            cardScale: 1
         }
     },
     editMode: false,
@@ -140,7 +142,9 @@ function loadState() {
                 hideReferenceSchemeButton: false,
                 swapAlgorithmDisplay: true,
                 enableMobileView: false,
-                hideSearchBar: false
+                hideSearchBar: false,
+                hideOverrideTrackedPieces: true,
+                cardScale: 1
             };
         }
     }
@@ -161,6 +165,13 @@ function renderCards(searchQuery = '') {
     searchContainer.style.display = STATE.settings.personalization.hideSearchBar ? 'none' : 'flex';
     grid.style.display = 'grid';
     empty.style.display = 'none';
+    
+    // Apply card scale
+    const scale = STATE.settings.personalization.cardScale || 1;
+    const baseCardWidth = 250;
+    const scaledCardWidth = baseCardWidth * scale;
+    grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(${scaledCardWidth}px, 1fr))`;
+    
     grid.innerHTML = '';
 
     const filteredCards = STATE.cards.filter(card => {
@@ -181,6 +192,9 @@ function renderCards(searchQuery = '') {
         cardEl.draggable = STATE.editMode;
 
         // Generate thumbnail for first case if exists, otherwise show (0,0)
+        const scale = STATE.settings.personalization.cardScale || 1;
+        const thumbnailSize = 90 * scale;
+        
         let thumbnailHtml = '';
         if (card.cases && card.cases.length > 0) {
             const firstCase = card.cases[0];
@@ -191,7 +205,7 @@ function renderCards(searchQuery = '') {
             if (!effectiveTrackedPieces || effectiveTrackedPieces.length === 0) {
                 try {
                     thumbnailHtml = window.Square1VisualizerLibraryWithSillyNames.visualizeCubeShapeOutlinesPlease(
-                        scramble, 90, 'transparent', 'transparent', 2, 5
+                        scramble, thumbnailSize, 'transparent', 'transparent', 2, 5
                     );
                 } catch (e) {
                     thumbnailHtml = '<div style="color:#999;font-size:10px;">No preview</div>';
@@ -212,7 +226,7 @@ function renderCards(searchQuery = '') {
 
                 try {
                     thumbnailHtml = window.Square1VisualizerLibraryWithSillyNames.helpMeTrackAPiecePlease(
-                        'scramble', scramble, pieces, 90, '#ffffff', colors, 2, 5, labels
+                        'scramble', scramble, pieces, thumbnailSize, '#ffffff', colors, 2, 5, labels
                     );
                 } catch (e) {
                     thumbnailHtml = '<div style="color:#999;font-size:10px;">No preview</div>';
@@ -222,23 +236,27 @@ function renderCards(searchQuery = '') {
             // Show (0,0) state for cards without cases
             try {
                 thumbnailHtml = window.Square1VisualizerLibraryWithSillyNames.visualizeCubeShapeOutlinesPlease(
-                    '(0,0)', 90, 'transparent', 'transparent', 2, 5
+                    '(0,0)', thumbnailSize, 'transparent', 'transparent', 2, 5
                 );
             } catch (e) {
                 thumbnailHtml = '<div style="color:#999;font-size:10px;">No cases</div>';
             }
         }
 
+        const imageHeight = 100 * scale;
+        const fontSize = 16 * scale;
+        const previewFontSize = 12 * scale;
+        
         cardEl.innerHTML = `
-    ${STATE.editMode ? `<button class="card-delete-btn" onclick="deleteCard(${idx}, event)"><img src="res/delete.svg" style="width:14px;height:14px;"></button>` : ''}
-    <div style="display:flex;flex-direction:column;gap:8px;">
-        <div style="position:relative;width:100%;height:100px;overflow:hidden;display:flex;justify-content:center;align-items:center;background:#f9f9f9;border:1px solid #e0e0e0;">
+    ${STATE.editMode ? `<button class="card-delete-btn" onclick="deleteCard(${idx}, event)"><img src="res/delete.svg" style="width:${14 * scale}px;height:${14 * scale}px;"></button>` : ''}
+    <div style="display:flex;flex-direction:column;gap:${8 * scale}px;">
+        <div style="position:relative;width:100%;height:${imageHeight}px;overflow:hidden;display:flex;justify-content:center;align-items:center;background:#f9f9f9;border:1px solid #e0e0e0;">
             <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(1.3);transform-origin:center center;">
                 ${thumbnailHtml}
             </div>
         </div>
-        <div class="card-title">${card.title || 'Anonymous Case'}</div>
-        <div class="card-preview">${card.cases?.length || 0} entries</div>
+        <div class="card-title" style="font-size:${fontSize}px;">${card.title || 'Anonymous Case'}</div>
+        <div class="card-preview" style="font-size:${previewFontSize}px;">${card.cases?.length || 0} entries</div>
     </div>
 `;
 
@@ -574,13 +592,13 @@ function updateTopbar() {
         if (addCardBtn) {
             addCardBtn.onclick = () => {
                 showInputModal('Card Title', 'Enter card title:', '', (title) => {
-                    if (title) {
-                        saveToHistory();
-                        STATE.cards.push({ title, cases: [], algorithms: [] });
-                        saveState();
-                        renderCards();
-                    }
-                });
+            if (title) {
+                saveToHistory();
+                STATE.cards.push({ title, cases: [], algorithms: [] });
+                saveState();
+                renderCards();
+            }
+        });
             };
         }
 

@@ -231,6 +231,15 @@ function openPersonalizationModal() {
             </div>
             <div class="modal-body">
                 <div class="settings-group">
+                    <label class="settings-label">Card Size Scale</label>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <input type="range" min="0.5" max="2" step="0.1" value="${STATE.settings.personalization.cardScale || 1}" 
+                               oninput="this.nextElementSibling.textContent = this.value + 'x'; STATE.settings.personalization.cardScale = parseFloat(this.value); saveState(); renderCards();"
+                               style="flex:1;">
+                        <span style="min-width:60px;text-align:right;">${STATE.settings.personalization.cardScale || 1}x</span>
+                    </div>
+                </div>
+                <div class="settings-group">
                     <label class="settings-label">
                         <input type="checkbox" ${STATE.settings.personalization.hideActualStateButton ? 'checked' : ''} 
                                onchange="STATE.settings.personalization.hideActualStateButton = this.checked; saveState();" 
@@ -276,6 +285,14 @@ function openPersonalizationModal() {
                                onchange="STATE.settings.personalization.hideSearchBar = this.checked; saveState(); renderCards();" 
                                style="margin-right:5px;">
                         Hide Search Bar on Home Screen
+                    </label>
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label">
+                        <input type="checkbox" ${STATE.settings.personalization.hideOverrideTrackedPieces ? 'checked' : ''} 
+                               onchange="STATE.settings.personalization.hideOverrideTrackedPieces = this.checked; saveState();" 
+                               style="margin-right:5px;">
+                        Hide Override Tracked Pieces in Edit Modal
                     </label>
                 </div>
             </div>
