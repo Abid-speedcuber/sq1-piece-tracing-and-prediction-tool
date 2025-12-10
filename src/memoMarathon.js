@@ -61,7 +61,10 @@ function openMemoTrainingModal() {
     modal.innerHTML = `
         <div class="modal-content" style="width:100vw;height:100vh;max-width:100vw;margin:0;border:none;border-radius:0;display:flex;flex-direction:column;">
             <div class="modal-header" style="background:#333;color:#fff;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
-                <h3 style="color:#fff;margin:0;">Memo Marathon Training</h3>
+                <div style="display:flex;align-items:center;gap:15px;flex:1;">
+                    <h3 style="color:#fff;margin:0;">Memo Marathon Training</h3>
+                    ${!STATE.settings.personalization.hideInstructions ? `<button onclick="openMemoInstructionModal()" title="Instructions" style="background:none;border:1px solid #666;border-radius:50%;cursor:pointer;color:#ddd;font-size:12px;font-weight:bold;font-family:serif;width:20px;height:20px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.borderColor='#aaa';this.style.color='#fff'" onmouseout="this.style.borderColor='#666';this.style.color='#ddd'">i</button>` : ''}
+                </div>
                 <div style="display:flex;gap:10px;">
                     <button class="icon-btn" id="memoSettingsBtn" title="Settings" style="background:#555;">
                         <img src="res/trainingSettings.svg" style="width:16px;height:16px;">
@@ -2124,6 +2127,53 @@ function translateHexToPieceCode(hex) {
         'c': 'DL'
     };
     return hexMap[hex.toLowerCase()] || hex;
+}
+
+function openMemoInstructionModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'block';
+
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:500px;max-height:80vh;margin:auto;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">
+            <div class="modal-header">
+                <h3>Memo Marathon Instructions</h3>
+                <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
+            </div>
+            <div class="modal-body" style="line-height:1.8;overflow-y:auto;flex:1;">
+                <h4 style="margin-bottom:10px;">Training Modes:</h4>
+                <ul style="padding-left:20px;margin-bottom:20px;">
+                    <li style="margin-bottom:10px;"><strong>Time Attack:</strong> Solve as many cases as possible within a time limit (1-10 minutes)</li>
+                    <li style="margin-bottom:10px;"><strong>Marathon:</strong> Complete a target number of cases (25, 50, 75, or 100)</li>
+                    <li style="margin-bottom:10px;"><strong>Survival:</strong> Solve cases until you make 5 mistakes</li>
+                </ul>
+
+                <h4 style="margin-bottom:10px;">Error Modes:</h4>
+                <ul style="padding-left:20px;margin-bottom:20px;">
+                    <li style="margin-bottom:10px;"><strong>Friendly:</strong> Wrong clicks don't advance to next scramble - try again</li>
+                    <li style="margin-bottom:10px;"><strong>Punish:</strong> Wrong clicks immediately advance to next scramble (auto-enabled in Survival)</li>
+                </ul>
+
+                <h4 style="margin-bottom:10px;">How to Play:</h4>
+                <ul style="padding-left:20px;margin-bottom:20px;">
+                    <li style="margin-bottom:10px;">Click pieces in your configured order (set in settings)</li>
+                    <li style="margin-bottom:10px;">Timer starts on your first click</li>
+                    <li style="margin-bottom:10px;">Click "Skip Case" to skip a difficult case (counts as incomplete)</li>
+                    <li style="margin-bottom:10px;">Case auto-advances when completed correctly</li>
+                </ul>
+
+                <h4 style="margin-bottom:10px;">Settings:</h4>
+                <ul style="padding-left:20px;">
+                    <li style="margin-bottom:10px;">Configure piece clicking order in the settings modal</li>
+                    <li style="margin-bottom:10px;">Adjust image size for better visibility</li>
+                    <li style="margin-bottom:10px;">Toggle Lock Orientation and Allow Mirror options</li>
+                </ul>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
 }
 
 // Export

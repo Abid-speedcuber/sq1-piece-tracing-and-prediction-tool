@@ -27,23 +27,60 @@
         </div>
     </div>
     <div class="topbar">
-        <div class="topbar-left">SQ1 Piece Tracing and Prediction Tool</div>
+        <div class="topbar-left">
+            <button class="icon-btn" id="sidebarToggleBtnLeft" title="Menu" style="margin-right:12px;">
+                <img src="res/sidebar.svg" alt="Menu" style="width:16px;height:16px;">
+            </button>
+            <span>SQ1 Piece Tracing and Prediction Tool</span>
+        </div>
         <div class="topbar-right">
-            <button class="icon-btn" id="addCardBtn" title="Add Case">
+            <button class="btn" id="addCardBtn" title="Add Case" style="padding:8px 16px;display:flex;align-items:center;gap:6px;">
                 <img src="res/plus.svg" alt="Add" style="width:16px;height:16px;">
-            </button>
-            <button class="icon-btn" id="editBtn" title="Edit Entries">
-                <img src="res/edit.svg" alt="Edit" style="width:16px;height:16px;">
-            </button>
-            <button class="icon-btn" id="variableBtn" title="Variable Table">
-                <img src="res/table.svg" alt="Variables" style="width:16px;height:16px;">
-            </button>
-            <button class="icon-btn" id="settingsBtn" title="Settings">
-                <img src="res/settings.svg" alt="Settings" style="width:16px;height:16px;">
+                <span>Add CS</span>
             </button>
             <button class="icon-btn" id="instructionBtn" title="Instructions">
                 <img src="res/instruction.svg" alt="Instructions" style="width:16px;height:16px;">
             </button>
+        </div>
+    </div>
+
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3 style="margin:0;font-size:16px;">Menu</h3>
+            <button class="icon-btn" id="sidebarCloseBtn" title="Close">
+                <img src="res/close.svg" alt="Close" style="width:16px;height:16px;">
+            </button>
+        </div>
+        <div class="sidebar-content">
+            <div class="sidebar-section">
+                <div class="sidebar-item" id="trainingDropdownToggle">
+                    <img src="res/training.svg" style="width:20px;height:20px;">
+                    <span>Training</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;margin-left:auto;transition:transform 0.2s;" id="trainingDropdownArrow">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="sidebar-dropdown" id="trainingDropdown">
+                    <div class="sidebar-dropdown-item" onclick="openCOTrackerTrainingModal()">
+                        <span>Solves</span>
+                    </div>
+                    <div class="sidebar-dropdown-item" onclick="openMemoTrainingModal()">
+                        <span>Memo Marathon</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-item" onclick="document.getElementById('editBtn').click()">
+                <img src="res/edit.svg" style="width:20px;height:20px;">
+                <span>Edit Home Page</span>
+            </div>
+            <div class="sidebar-item" onclick="openVariableModal()">
+                <img src="res/table.svg" style="width:20px;height:20px;">
+                <span>Variable Table</span>
+            </div>
+            <div class="sidebar-item" onclick="openSettingsModal()">
+                <img src="res/settings.svg" style="width:20px;height:20px;">
+                <span>Settings</span>
+            </div>
         </div>
     </div>
 

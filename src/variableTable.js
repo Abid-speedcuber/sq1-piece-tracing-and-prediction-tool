@@ -395,9 +395,9 @@ function openVariableModal() {
             <div class="modal-header">
                 <div style="display:flex;align-items:center;gap:10px;">
                     <h3 style="margin:0;">Variable Table</h3>
-                    <button class="icon-btn" onclick="openVariableInstructionModal()" title="Variable Help" style="width:24px;height:24px;">
+                    ${!STATE.settings.personalization.hideInstructions ? `<button class="icon-btn" onclick="openVariableInstructionModal()" title="Variable Help" style="width:24px;height:24px;">
                         <img src="res/instruction.svg" style="width:12px;height:12px;">
-                    </button>
+                    </button>` : ''}
                 </div>
                 <div style="display:flex;gap:8px;align-items:center;">
                     <button class="icon-btn" onclick="window.addVariableModal()" title="Add Variable">

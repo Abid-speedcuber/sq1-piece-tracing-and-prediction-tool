@@ -19,9 +19,9 @@ function openCardModal(cardIdx) {
             <div class="modal-header" style="background:#333;color:#fff;display:flex;justify-content:space-between;align-items:center;">
 <div style="display:flex;align-items:center;gap:10px;">
     <h3 style="color:#fff;margin:0;">${card.title || 'Untitled Case'}</h3>
-    <button class="icon-btn" onclick="openCardInstructionModal()" title="Help" style="width:24px;height:24px;background:#555;">
+    ${!STATE.settings.personalization.hideInstructions ? `<button class="icon-btn" onclick="openCardInstructionModal()" title="Help" style="width:24px;height:24px;background:#555;">
         <img src="res/white-instruction.svg" style="width:12px;height:12px;">
-    </button>
+    </button>` : ''}
 </div>
 <button class="close-btn" onclick="this.closest('.modal').remove()" style="color:#fff;">×</button>
             </div>
@@ -122,10 +122,23 @@ function renderCases(cardIdx) {
             ${!hideActualState ? `<button class="btn ${caseItem.showActualState ? 'btn-primary' : ''}" onclick="toggleShowActualState(${cardIdx}, ${actualIdx})" style="padding:6px 12px;font-size:13px;">Show Actual State</button>` : ''}
             ${!hideChangePieces ? `<button class="btn" onclick="openTrackPiecesPopup(event, ${cardIdx}, ${actualIdx})" style="padding:6px 12px;font-size:13px;">Change Tracked Pieces</button>` : ''}
             ${!hideRefScheme ? `<button class="btn" onclick="openReferenceSchemePopup(event, ${cardIdx}, ${actualIdx})" style="padding:6px 12px;font-size:13px;">Show Reference Scheme</button>` : ''}
-            <button class="btn" onclick="openTrainingSelectionModal(${cardIdx}, ${actualIdx})" style="padding:6px 12px;font-size:13px;">Train This Case</button>
         `;
 
         if (isMobileView) {
+            // Check screen width for multi-column layout
+            const screenWidth = window.innerWidth;
+            let columns = 1;
+            if (screenWidth >= 2400) columns = 3;
+            else if (screenWidth >= 1200) columns = 2;
+            
+            if (columns > 1 && container.style.display !== 'grid') {
+                container.style.display = 'grid';
+                container.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+                container.style.gap = '15px';
+            } else if (columns === 1) {
+                container.style.display = 'block';
+            }
+            
             caseCard.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <strong style="font-size:16px;">Angle ${caseIdx + 1}</strong>
@@ -480,9 +493,9 @@ function openCaseEditModal(cardIdx, caseIdx) {
                         <div class="modal-header" style="background:#333;color:#fff;">
 <div style="display:flex;align-items:center;gap:10px;">
     <h3 style="color:#fff;margin:0;">Edit Angle ${caseIdx + 1}</h3>
-    <button class="icon-btn" onclick="openEditInstructionModal()" title="Help" style="width:24px;height:24px;background:#555;">
+    ${!STATE.settings.personalization.hideInstructions ? `<button class="icon-btn" onclick="openEditInstructionModal()" title="Help" style="width:24px;height:24px;background:#555;">
         <img src="res/white-instruction.svg" style="width:12px;height:12px;">
-    </button>
+    </button>` : ''}
 </div>
 <button class="close-btn" onclick="window.cancelCaseEditModal()" style="color:#fff;">×</button>
                         </div>
@@ -1003,42 +1016,6 @@ function openReferenceSchemePopup(event, cardIdx, caseIdx) {
         }
     };
     setTimeout(() => document.addEventListener('click', closePopup), 100);
-}
-
-function openTrainingSelectionModal(cardIdx, caseIdx) {
-    const modal = document.createElement('div');
-    modal.className = 'modal';
-    modal.style.display = 'block';
-
-    modal.innerHTML = `
-        <div class="modal-content" style="max-width:400px;height:auto;">
-            <div class="modal-header">
-                <h3>Select Training Type</h3>
-                <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
-            </div>
-            <div class="modal-body" style="padding:20px;">
-                <div style="display:flex;flex-direction:column;gap:10px;">
-                    <button class="btn btn-primary" onclick="this.closest('.modal').remove(); openCOTrackerTrainingModal(${cardIdx}, ${caseIdx});" 
-                            style="padding:12px;font-size:14px;text-align:left;display:flex;align-items:center;justify-content:space-between;">
-                        <span>Solves</span>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="9 18 15 12 9 6"></polyline>
-                        </svg>
-                    </button>
-                    <button class="btn btn-primary" onclick="this.closest('.modal').remove(); openMemoTrainingModal();" 
-                            style="padding:12px;font-size:14px;text-align:left;display:flex;align-items:center;justify-content:space-between;">
-                        <span>Memo Marathon</span>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="9 18 15 12 9 6"></polyline>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
 }
 
 function switchCaseTab(btn, targetId) {

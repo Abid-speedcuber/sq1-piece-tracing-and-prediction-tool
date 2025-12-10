@@ -41,6 +41,8 @@ let trainingSettings = loadTrainingSettings();
 let trainingPeeking = false;
 let trainingOriginalImage = '';
 let trainingSelectedCases = [];
+let trainingHoldStartTime = 0;
+const TIMER_HOLD_THRESHOLD = 300; // 300ms
 
 function loadTrainingSelectedCases() {
     const saved = localStorage.getItem('sq1TrainingSelectedCases');
@@ -166,7 +168,7 @@ function createCOTrackerTrainingModal() {
             <div class="modal-header" style="background:#333;color:#fff;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;padding:12px 20px;">
                 <div style="display:flex;align-items:center;gap:15px;flex:1;">
                     <h3 style="color:#fff;margin:0;font-size:16px;" id="trainingCaseTitle">${getTrainingTitleText()}</h3>
-                    <button onclick="openTrainingInstructionModal()" title="Instructions" style="background:none;border:1px solid #666;border-radius:50%;cursor:pointer;color:#ddd;font-size:12px;font-weight:bold;font-family:serif;width:20px;height:20px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.borderColor='#aaa';this.style.color='#fff'" onmouseout="this.style.borderColor='#666';this.style.color='#ddd'">i</button>
+                    ${!STATE.settings.personalization.hideInstructions ? `<button onclick="openTrainingInstructionModal()" title="Instructions" style="background:none;border:1px solid #666;border-radius:50%;cursor:pointer;color:#ddd;font-size:12px;font-weight:bold;font-family:serif;width:20px;height:20px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.borderColor='#aaa';this.style.color='#fff'" onmouseout="this.style.borderColor='#666';this.style.color='#ddd'">i</button>` : ''}
                 </div>
                 <div style="display:flex;align-items:center;gap:15px;">
                     <span onclick="window.openTrainingCaseSelectionModalFromHeader()" style="cursor:pointer;color:#aaa;font-size:13px;transition:all 0.2s;border:1px solid #555;padding:4px 10px;border-radius:4px;" onmouseover="this.style.color='#fff';this.style.borderColor='#777'" onmouseout="this.style.color='#aaa';this.style.borderColor='#555'">${trainingSelectedCases.length} case(s) selected</span>
@@ -384,6 +386,7 @@ function openCOTrackerTrainingModal(cardIdx = null, caseIdx = null) {
         // Show empty state message
         document.getElementById('trainingScrambleText').innerHTML = '<span style="color:#999;">Select cases to begin training</span>';
         document.getElementById('trainingScrambleImage').innerHTML = '<div style="color:#999;font-size:14px;">No cases selected</div>';
+        document.getElementById('trainingTimer').style.display = 'none';
         modal.style.display = 'flex';
         updatePeekButtonVisibility();
         return;
@@ -397,6 +400,9 @@ function openCOTrackerTrainingModal(cardIdx = null, caseIdx = null) {
     displayNextTrainingScramble();
 
     modal.style.display = 'flex';
+    
+    // Show timer
+    document.getElementById('trainingTimer').style.display = 'block';
     
     // Update peek button visibility based on labels setting
     updatePeekButtonVisibility();
@@ -957,6 +963,7 @@ function nextTrainingScrambleManual() {
 function handleTrainingTimerMouseDown() {
     if (trainingTimerRunning) return;
     trainingIsHolding = true;
+    trainingHoldStartTime = Date.now();
     document.getElementById('trainingTimer').style.color = '#ffc107';
 }
 
@@ -965,9 +972,13 @@ function handleTrainingTimerMouseUp() {
         displayNextTrainingScramble();
         stopTrainingTimerOnly();
     } else if (trainingIsHolding) {
+        const holdDuration = Date.now() - trainingHoldStartTime;
         trainingIsHolding = false;
         document.getElementById('trainingTimer').style.color = '#2d3748';
-        startTrainingTimer();
+        
+        if (holdDuration >= TIMER_HOLD_THRESHOLD) {
+            startTrainingTimer();
+        }
     }
 }
 
@@ -983,6 +994,7 @@ function handleTrainingTimerTouchStart(e) {
     e.preventDefault();
     if (trainingTimerRunning) return;
     trainingIsHolding = true;
+    trainingHoldStartTime = Date.now();
     document.getElementById('trainingTimer').style.color = '#ffc107';
 }
 
@@ -992,9 +1004,13 @@ function handleTrainingTimerTouchEnd(e) {
         displayNextTrainingScramble();
         stopTrainingTimerOnly();
     } else if (trainingIsHolding) {
+        const holdDuration = Date.now() - trainingHoldStartTime;
         trainingIsHolding = false;
         document.getElementById('trainingTimer').style.color = '#2d3748';
-        startTrainingTimer();
+        
+        if (holdDuration >= TIMER_HOLD_THRESHOLD) {
+            startTrainingTimer();
+        }
     }
 }
 
@@ -1302,13 +1318,31 @@ function openTrainingCaseSelectionModal() {
     window.saveTrainingCaseSelection = function() {
         modal.remove();
         
+        // Clear all pre-generated scrambles and history
+        trainingPreGeneratedScrambles = [];
+        trainingScrambleHistory = [];
+        trainingCurrentHistoryIndex = -1;
+        
         // Update training modal title and restart if it's open
         const trainingModal = document.getElementById('coTrackerTrainingModal');
         if (trainingModal && trainingModal.style.display !== 'none') {
             if (trainingSelectedCases.length > 0) {
-                // Restart training with new selection
-                closeCOTrackerTrainingModal();
-                setTimeout(() => openCOTrackerTrainingModal(), 100);
+                // Generate fresh scrambles with new selection
+                for (let i = 0; i < 3; i++) {
+                    trainingPreGeneratedScrambles.push(generateNextTrainingScrambleData());
+                }
+                displayNextTrainingScramble();
+                
+                // Update title
+                const titleEl = document.getElementById('trainingCaseTitle');
+                if (titleEl) {
+                    titleEl.textContent = getTrainingTitleText();
+                }
+                
+                const selectCasesSpan = document.querySelector('[onclick="window.openTrainingCaseSelectionModalFromHeader()"]');
+                if (selectCasesSpan) {
+                    selectCasesSpan.textContent = `${trainingSelectedCases.length} case(s) selected`;
+                }
             } else {
                 // Update to show empty state
                 const titleEl = document.getElementById('trainingCaseTitle');
@@ -1424,9 +1458,13 @@ document.addEventListener('keyup', (e) => {
                 displayNextTrainingScramble();
                 stopTrainingTimerOnly();
             } else if (trainingIsHolding) {
+                const holdDuration = Date.now() - trainingHoldStartTime;
                 trainingIsHolding = false;
                 timerEl.style.color = '#2d3748';
-                startTrainingTimer();
+                
+                if (holdDuration >= TIMER_HOLD_THRESHOLD) {
+                    startTrainingTimer();
+                }
             }
         }
     }

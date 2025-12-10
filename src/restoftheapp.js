@@ -144,8 +144,13 @@ function loadState() {
                 enableMobileView: false,
                 hideSearchBar: false,
                 hideOverrideTrackedPieces: true,
-                cardScale: 1
+                cardScale: 1,
+                hideInstructions: false
             };
+        }
+        // Ensure hideInstructions exists for existing users
+        if (STATE.settings.personalization.hideInstructions === undefined) {
+            STATE.settings.personalization.hideInstructions = false;
         }
     }
 }
@@ -571,22 +576,17 @@ function updateTopbar() {
         };
     } else {
         topbarRight.innerHTML = `
-                    <button class="icon-btn" id="addCardBtn" title="Add Card">
+                    <button class="btn" id="addCardBtn" title="Add Case" style="padding:8px 16px;display:flex;align-items:center;gap:6px;">
                         <img src="res/plus.svg" alt="Add" style="width:16px;height:16px;">
-                    </button>
-                    <button class="icon-btn" id="editBtn" title="Edit Entries">
-                        <img src="res/edit.svg" alt="Edit" style="width:16px;height:16px;">
-                    </button>
-                    <button class="icon-btn" id="variableBtn" title="Variable Table">
-                        <img src="res/table.svg" alt="Variables" style="width:16px;height:16px;">
-                    </button>
-                    <button class="icon-btn" id="settingsBtn" title="Settings">
-                        <img src="res/settings.svg" alt="Settings" style="width:16px;height:16px;">
+                        <span>Add CS</span>
                     </button>
                     <button class="icon-btn" id="instructionBtn" title="Instructions">
                         <img src="res/instruction.svg" alt="Instructions" style="width:16px;height:16px;">
                     </button>
                 `;
+        
+        // Setup sidebar after creating buttons
+        setTimeout(() => setupSidebar(), 0);
 
         const addCardBtn = document.getElementById('addCardBtn');
         if (addCardBtn) {
@@ -602,20 +602,81 @@ function updateTopbar() {
             };
         }
 
-        document.getElementById('editBtn').onclick = () => {
-            STATE.editMode = true;
-            // Initialize fresh history for this edit session
-            STATE.history = [JSON.stringify({ cards: STATE.cards })];
-            STATE.historyIndex = 0;
-            updateTopbar();
-            renderCards();
-        };
-
-        document.getElementById('variableBtn').onclick = openVariableModal;
-        document.getElementById('settingsBtn').onclick = openSettingsModal;
-        document.getElementById('instructionBtn').onclick = openHomeInstructionModal;
+        const instructionBtn = document.getElementById('instructionBtn');
+        if (instructionBtn) {
+            instructionBtn.onclick = openHomeInstructionModal;
+            if (STATE.settings.personalization && STATE.settings.personalization.hideInstructions) {
+                instructionBtn.style.display = 'none';
+            }
+        }
     }
+    
+    // Always setup sidebar at the end
+    setTimeout(() => setupSidebar(), 0);
 }
+
+function setupSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('sidebarToggleBtn') || document.getElementById('sidebarToggleBtnLeft');
+    const closeBtn = document.getElementById('sidebarCloseBtn');
+    const trainingToggle = document.getElementById('trainingDropdownToggle');
+    const trainingDropdown = document.getElementById('trainingDropdown');
+    const trainingArrow = document.getElementById('trainingDropdownArrow');
+    
+    if (!sidebar || !toggleBtn) return;
+    
+    toggleBtn.onclick = () => {
+        sidebar.classList.add('open');
+    };
+    
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            sidebar.classList.remove('open');
+            trainingDropdown.classList.remove('open');
+            trainingArrow.style.transform = 'rotate(0deg)';
+        };
+    }
+    
+    if (trainingToggle && trainingDropdown) {
+        trainingToggle.onclick = (e) => {
+            e.stopPropagation();
+            const isOpen = trainingDropdown.classList.contains('open');
+            if (isOpen) {
+                trainingDropdown.classList.remove('open');
+                trainingArrow.style.transform = 'rotate(0deg)';
+            } else {
+                trainingDropdown.classList.add('open');
+                trainingArrow.style.transform = 'rotate(180deg)';
+            }
+        };
+    }
+    
+    // Close sidebar when clicking outside
+    document.addEventListener('click', (e) => {
+        const toggleBtnLeft = document.getElementById('sidebarToggleBtnLeft');
+        const toggleBtnRight = document.getElementById('sidebarToggleBtn');
+        const clickedToggle = (toggleBtnLeft && toggleBtnLeft.contains(e.target)) || (toggleBtnRight && toggleBtnRight.contains(e.target));
+        
+        if (!sidebar.contains(e.target) && !clickedToggle) {
+            sidebar.classList.remove('open');
+            if (trainingDropdown) trainingDropdown.classList.remove('open');
+            if (trainingArrow) trainingArrow.style.transform = 'rotate(0deg)';
+        }
+    });
+}
+
+// Add a hidden edit button for sidebar to trigger
+const hiddenEditBtn = document.createElement('button');
+hiddenEditBtn.id = 'editBtn';
+hiddenEditBtn.style.display = 'none';
+hiddenEditBtn.onclick = () => {
+    STATE.editMode = true;
+    STATE.history = [JSON.stringify({ cards: STATE.cards })];
+    STATE.historyIndex = 0;
+    updateTopbar();
+    renderCards();
+};
+document.body.appendChild(hiddenEditBtn);
 
 loadState();
 updateTopbar();

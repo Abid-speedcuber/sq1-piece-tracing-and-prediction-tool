@@ -13,25 +13,32 @@ function openHomeInstructionModal() {
                 <h4 style="margin-bottom:10px;">Getting Started:</h4>
                 <ul style="padding-left:20px;margin-bottom:20px;">
                     <li style="margin-bottom:10px;">Look for the <strong>help icons (ⓘ)</strong> throughout the app—they provide context-specific instructions</li>
-                    <li style="margin-bottom:10px;">This app was built using Claude AI. If you encounter bugs, please report them to <a href="mailto:abidashrafkhulna@gmail.com">abidashrafkhulna@gmail.com</a></li>
+                    <li style="margin-bottom:10px;">Click the <strong>hamburger menu</strong> icon to access the sidebar with all tools</li>
+                    <li style="margin-bottom:10px;">This app was built using Claude AI. Report bugs to <a href="mailto:abidashrafkhulna@gmail.com">abidashrafkhulna@gmail.com</a></li>
                     <li style="margin-bottom:10px;"><strong>Important:</strong> Regularly export your data from Settings to prevent data loss</li>
                     <li style="margin-bottom:10px;">If the app freezes, refresh the page—your data is saved automatically</li>
                 </ul>
 
                 <h4 style="margin-bottom:10px;">Variables:</h4>
                 <ul style="padding-left:20px;margin-bottom:20px;">
-                    <li style="margin-bottom:10px;">Click the <strong>table icon</strong> in the top bar to access the Variables table</li>
-                    <li style="margin-bottom:10px;">Store frequently used triggers as variables for easier input</li>
+                    <li style="margin-bottom:10px;">Access the Variables table from the sidebar menu</li>
+                    <li style="margin-bottom:10px;">Store frequently used sequences as variables for easier input</li>
                     <li style="margin-bottom:10px;">Variables can reference other variables (they expand recursively)</li>
                     <li style="margin-bottom:10px;">Use variables in algorithms with <code>*variableName*</code> or <code>&lt;variableName&gt;</code></li>
                 </ul>
                 
                 <h4 style="margin-bottom:10px;">Case Organization:</h4>
                 <ul style="padding-left:20px;margin-bottom:20px;">
-                    <li style="margin-bottom:10px;">Each case contains 4 sections organized by parity (odd/even) and orientation (original/mirror)</li>
-                    <li style="margin-bottom:10px;">Click the <strong>edit icon</strong> to delete or rearrange cases</li>
-                    <li style="margin-bottom:10px;">Each case card shows a thumbnail of its first angle for quick reference</li>
-                    <li style="margin-bottom:10px;">Access Settings to customize colors, labels, and default tracked pieces</li>
+                    <li style="margin-bottom:10px;">Each case contains 4 sections: Odd/Even Parity × Original/Mirror Orientation</li>
+                    <li style="margin-bottom:10px;">Click the <strong>Edit Home Page</strong> in the sidebar to rearrange or delete cases</li>
+                    <li style="margin-bottom:10px;">Each case card shows a thumbnail preview of its first angle</li>
+                    <li style="margin-bottom:10px;">Customize colors, labels, and default tracked pieces in Settings</li>
+                </ul>
+
+                <h4 style="margin-bottom:10px;">Training Modes:</h4>
+                <ul style="padding-left:20px;margin-bottom:20px;">
+                    <li style="margin-bottom:10px;"><strong>Solves:</strong> Practice recognizing and solving your cases with randomization options</li>
+                    <li style="margin-bottom:10px;"><strong>Memo Marathon:</strong> Click pieces in order to practice memorization with time/target goals</li>
                 </ul>
 
                 <h4 style="margin-bottom:10px;">Open Source:</h4>

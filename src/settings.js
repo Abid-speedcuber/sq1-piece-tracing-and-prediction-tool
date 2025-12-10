@@ -8,9 +8,9 @@ function openSettingsModal() {
                     <div class="modal-header">
     <div style="display:flex;align-items:center;gap:10px;">
         <h3 style="margin:0;">Settings</h3>
-        <button class="icon-btn" onclick="openSettingsInstructionModal()" title="Settings Help" style="width:24px;height:24px;">
+        ${!STATE.settings.personalization.hideInstructions ? `<button class="icon-btn" onclick="openSettingsInstructionModal()" title="Settings Help" style="width:24px;height:24px;">
             <img src="res/instruction.svg" style="width:12px;height:12px;">
-        </button>
+        </button>` : ''}
     </div>
     <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
 </div>
@@ -293,6 +293,14 @@ function openPersonalizationModal() {
                                onchange="STATE.settings.personalization.hideOverrideTrackedPieces = this.checked; saveState();" 
                                style="margin-right:5px;">
                         Hide Override Tracked Pieces in Edit Modal
+                    </label>
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label">
+                        <input type="checkbox" ${STATE.settings.personalization.hideInstructions ? 'checked' : ''} 
+                               onchange="STATE.settings.personalization.hideInstructions = this.checked; saveState(); updateTopbar(); renderCards();" 
+                               style="margin-right:5px;">
+                        Hide Instruction Buttons
                     </label>
                 </div>
             </div>
