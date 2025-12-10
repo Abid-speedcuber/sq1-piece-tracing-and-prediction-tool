@@ -207,9 +207,9 @@ function createCOTrackerTrainingModal() {
     };
 
     document.getElementById('trainingSettingsBtn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        openTrainingSettingsModal();
-    });
+    e.stopPropagation();
+    openSettingsModal('training');
+});
 
     // Draggable peek button - reset position on new modal open
     const peekBtn = document.getElementById('trainingPeekBtn');
@@ -387,6 +387,8 @@ function openCOTrackerTrainingModal(cardIdx = null, caseIdx = null) {
         document.getElementById('trainingScrambleText').innerHTML = '<span style="color:#999;">Select cases to begin training</span>';
         document.getElementById('trainingScrambleImage').innerHTML = '<div style="color:#999;font-size:14px;">No cases selected</div>';
         document.getElementById('trainingTimer').style.display = 'none';
+        document.getElementById('trainingTimerZone').style.pointerEvents = 'none';
+        document.getElementById('trainingTimerZone').style.cursor = 'default';
         modal.style.display = 'flex';
         updatePeekButtonVisibility();
         return;
@@ -401,8 +403,15 @@ function openCOTrackerTrainingModal(cardIdx = null, caseIdx = null) {
 
     modal.style.display = 'flex';
     
-    // Show timer
+    // Show timer and enable timer zone
     document.getElementById('trainingTimer').style.display = 'block';
+    document.getElementById('trainingTimerZone').style.pointerEvents = 'auto';
+    document.getElementById('trainingTimerZone').style.cursor = 'pointer';
+    
+    // Reset timer display
+    trainingTimerElapsed = 0;
+    document.getElementById('trainingTimer').textContent = '0.000';
+    document.getElementById('trainingTimer').style.color = '#2d3748';
     
     // Update peek button visibility based on labels setting
     updatePeekButtonVisibility();
@@ -964,17 +973,26 @@ function handleTrainingTimerMouseDown() {
     if (trainingTimerRunning) return;
     trainingIsHolding = true;
     trainingHoldStartTime = Date.now();
-    document.getElementById('trainingTimer').style.color = '#ffc107';
+    const timerEl = document.getElementById('trainingTimer');
+    if (!timerEl) return;
+    if (trainingSettings.disableStartCue) {
+        timerEl.style.color = '#ffc107';
+    } else {
+        timerEl.style.color = '#ef4444';
+    }
 }
 
 function handleTrainingTimerMouseUp() {
+    const timerEl = document.getElementById('trainingTimer');
+    if (!timerEl) return;
+    
     if (trainingTimerRunning) {
         displayNextTrainingScramble();
         stopTrainingTimerOnly();
     } else if (trainingIsHolding) {
         const holdDuration = Date.now() - trainingHoldStartTime;
         trainingIsHolding = false;
-        document.getElementById('trainingTimer').style.color = '#2d3748';
+        timerEl.style.color = '#2d3748';
         
         if (holdDuration >= TIMER_HOLD_THRESHOLD) {
             startTrainingTimer();
@@ -985,7 +1003,10 @@ function handleTrainingTimerMouseUp() {
 function handleTrainingTimerMouseLeave() {
     if (trainingIsHolding && !trainingTimerRunning) {
         trainingIsHolding = false;
-        document.getElementById('trainingTimer').style.color = '#2d3748';
+        const timerEl = document.getElementById('trainingTimer');
+        if (timerEl) {
+            timerEl.style.color = '#2d3748';
+        }
     }
 }
 
@@ -995,18 +1016,27 @@ function handleTrainingTimerTouchStart(e) {
     if (trainingTimerRunning) return;
     trainingIsHolding = true;
     trainingHoldStartTime = Date.now();
-    document.getElementById('trainingTimer').style.color = '#ffc107';
+    const timerEl = document.getElementById('trainingTimer');
+    if (!timerEl) return;
+    if (trainingSettings.disableStartCue) {
+        timerEl.style.color = '#ffc107';
+    } else {
+        timerEl.style.color = '#ef4444';
+    }
 }
 
 function handleTrainingTimerTouchEnd(e) {
     e.preventDefault();
+    const timerEl = document.getElementById('trainingTimer');
+    if (!timerEl) return;
+    
     if (trainingTimerRunning) {
         displayNextTrainingScramble();
         stopTrainingTimerOnly();
     } else if (trainingIsHolding) {
         const holdDuration = Date.now() - trainingHoldStartTime;
         trainingIsHolding = false;
-        document.getElementById('trainingTimer').style.color = '#2d3748';
+        timerEl.style.color = '#2d3748';
         
         if (holdDuration >= TIMER_HOLD_THRESHOLD) {
             startTrainingTimer();
@@ -1430,7 +1460,11 @@ document.addEventListener('keydown', (e) => {
         if (!trainingSpacePressed) {
             trainingSpacePressed = true;
             const timerEl = document.getElementById('trainingTimer');
-            timerEl.style.color = '#ffc107';
+            if (trainingSettings.disableStartCue) {
+                timerEl.style.color = '#ffc107';
+            } else {
+                timerEl.style.color = '#ef4444';
+            }
             if (!trainingTimerRunning) {
                 trainingIsHolding = true;
             }

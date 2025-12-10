@@ -23,7 +23,12 @@ function openCardModal(cardIdx) {
         <img src="res/white-instruction.svg" style="width:12px;height:12px;">
     </button>` : ''}
 </div>
-<button class="close-btn" onclick="this.closest('.modal').remove()" style="color:#fff;">×</button>
+<div style="display:flex;gap:10px;">
+    <button class="icon-btn" onclick="openSettingsModal('card')" title="Settings" style="width:32px;height:32px;background:#555;">
+        <img src="res/settings.svg" style="width:16px;height:16px;">
+    </button>
+    <button class="close-btn" onclick="this.closest('.modal').remove()" style="color:#fff;">×</button>
+</div>
             </div>
             <div class="modal-body" style="padding:20px;width:100%;box-sizing:border-box;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;">
                 <div style="display:flex;gap:40px;margin-bottom:20px;padding:10px 0;align-items:center;">

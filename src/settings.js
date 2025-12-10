@@ -1,52 +1,385 @@
-function openSettingsModal() {
+function openSettingsModal(context = 'sidebar') {
+    // context can be: 'sidebar', 'card', 'training', 'memo'
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.display = 'block';
-
-    modal.innerHTML = `
-                <div class="modal-content" style="max-width:500px;max-height:80vh;margin:auto;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">
-                    <div class="modal-header">
-    <div style="display:flex;align-items:center;gap:10px;">
-        <h3 style="margin:0;">Settings</h3>
-        ${!STATE.settings.personalization.hideInstructions ? `<button class="icon-btn" onclick="openSettingsInstructionModal()" title="Settings Help" style="width:24px;height:24px;">
-            <img src="res/instruction.svg" style="width:12px;height:12px;">
-        </button>` : ''}
-    </div>
-    <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
-</div>
-                    <div class="modal-body">
-                        <div class="settings-group">
-                            <label class="settings-label">Image Size</label>
-                            <div style="display:flex;align-items:center;gap:10px;">
-                                <input type="range" min="100" max="400" value="${STATE.settings.imageSize}" 
-                                       oninput="this.nextElementSibling.textContent = this.value + 'px'; STATE.settings.imageSize = parseInt(this.value); saveState();"
-                                       style="flex:1;">
-                                <span style="min-width:60px;text-align:right;">${STATE.settings.imageSize}px</span>
+    
+    // Determine which tabs are accessible
+    const tabs = {
+        overall: { enabled: true, id: 'overall', icon: 'settings-overall' },
+        home: { enabled: context === 'sidebar', id: 'home', icon: 'settings-home' },
+        case: { enabled: context === 'sidebar' || context === 'card', id: 'case', icon: 'settings-case' },
+        training: { enabled: context === 'training', id: 'training', icon: 'settings-training' },
+        memo: { enabled: context === 'memo', id: 'memo', icon: 'settings-memo' }
+    };
+    
+    let activeTab = 'overall';
+    
+    function renderTabContent(tabId) {
+        switch(tabId) {
+            case 'overall':
+                return `
+                    <div class="settings-group">
+                        <button class="btn btn-primary" style="width:100%;margin-bottom:8px;" onclick="openColorMappingModalInline();">Configure Color Mappings</button>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">
+                            <input type="checkbox" ${STATE.settings.enableLabels ? 'checked' : ''} 
+                                   onchange="STATE.settings.enableLabels = this.checked; saveState(); if (typeof updatePeekButtonVisibility === 'function') updatePeekButtonVisibility(); liveUpdateCaseModal();" 
+                                   style="margin-right:5px;">
+                            Enable Letter/Number Labels
+                        </label>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">Color Scheme</label>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+                            <div>
+                                <label style="font-size:12px;display:block;margin-bottom:3px;">Top Color</label>
+                                <input type="color" value="${STATE.settings.colorScheme?.topColor || '#000000'}" 
+                                       onchange="updateGlobalColor('topColor', this.value)"
+                                       style="width:100%;height:32px;cursor:pointer;">
+                            </div>
+                            <div>
+                                <label style="font-size:12px;display:block;margin-bottom:3px;">Bottom Color</label>
+                                <input type="color" value="${STATE.settings.colorScheme?.bottomColor || '#FFFFFF'}" 
+                                       onchange="updateGlobalColor('bottomColor', this.value)"
+                                       style="width:100%;height:32px;cursor:pointer;">
+                            </div>
+                            <div>
+                                <label style="font-size:12px;display:block;margin-bottom:3px;">Front Color</label>
+                                <input type="color" value="${STATE.settings.colorScheme?.frontColor || '#CC0000'}" 
+                                       onchange="updateGlobalColor('frontColor', this.value)"
+                                       style="width:100%;height:32px;cursor:pointer;">
+                            </div>
+                            <div>
+                                <label style="font-size:12px;display:block;margin-bottom:3px;">Right Color</label>
+                                <input type="color" value="${STATE.settings.colorScheme?.rightColor || '#00AA00'}" 
+                                       onchange="updateGlobalColor('rightColor', this.value)"
+                                       style="width:100%;height:32px;cursor:pointer;">
+                            </div>
+                            <div>
+                                <label style="font-size:12px;display:block;margin-bottom:3px;">Back Color</label>
+                                <input type="color" value="${STATE.settings.colorScheme?.backColor || '#FF8C00'}" 
+                                       onchange="updateGlobalColor('backColor', this.value)"
+                                       style="width:100%;height:32px;cursor:pointer;">
+                            </div>
+                            <div>
+                                <label style="font-size:12px;display:block;margin-bottom:3px;">Left Color</label>
+                                <input type="color" value="${STATE.settings.colorScheme?.leftColor || '#0066CC'}" 
+                                       onchange="updateGlobalColor('leftColor', this.value)"
+                                       style="width:100%;height:32px;cursor:pointer;">
                             </div>
                         </div>
-                        <div class="settings-group">
-                            <label class="settings-label">
-                                <input type="checkbox" ${STATE.settings.enableLabels ? 'checked' : ''} 
-                                       onchange="STATE.settings.enableLabels = this.checked; saveState(); if (typeof updatePeekButtonVisibility === 'function') updatePeekButtonVisibility();" 
-                                       style="margin-right:5px;">
-                                Enable Letter/Number Labels
-                            </label>
-                        </div>
-                        <div class="settings-group">
-                            <button class="btn btn-primary" style="width:100%;margin-bottom:8px;" onclick="this.closest('.modal').remove(); openColorMappingModal();">Configure Color Mappings</button>
-                            <button class="btn btn-primary" style="width:100%;margin-bottom:8px;" onclick="this.closest('.modal').remove(); openDefaultTrackedPiecesModal();">Default Tracked Pieces</button>
-                            <button class="btn btn-primary" style="width:100%;margin-bottom:8px;" onclick="this.closest('.modal').remove(); openPersonalizationModal();">Personalization</button>
-                        </div>
-                        <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;">
-                            <button class="btn" style="width:100%;margin-bottom:8px;" onclick="exportData()">Export Data</button>
-                            <button class="btn" style="width:100%;" onclick="document.getElementById('importFile').click()">Import Data</button>
-                            <input type="file" id="importFile" style="display:none;" onchange="importData(this)">
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">
+                            <input type="checkbox" ${STATE.settings.personalization.hideInstructions ? 'checked' : ''} 
+                                   onchange="STATE.settings.personalization.hideInstructions = this.checked; saveState(); updateTopbar(); renderCards();" 
+                                   style="margin-right:5px;">
+                            Hide Instruction Buttons
+                        </label>
+                    </div>
+                    <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;">
+                        <button class="btn" style="width:100%;margin-bottom:8px;" onclick="exportData()">Export Data</button>
+                        <button class="btn" style="width:100%;" onclick="document.getElementById('importFile').click()">Import Data</button>
+                        <input type="file" id="importFile" style="display:none;" onchange="importData(this)">
+                    </div>
+                `;
+            case 'home':
+                return `
+                    <div class="settings-group">
+                        <label class="settings-label">Card Size Scale</label>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <input type="range" min="0.5" max="2" step="0.1" value="${STATE.settings.personalization.cardScale || 1}" 
+                                   oninput="this.nextElementSibling.textContent = this.value + 'x'; STATE.settings.personalization.cardScale = parseFloat(this.value); saveState(); renderCards();"
+                                   style="flex:1;">
+                            <span style="min-width:60px;text-align:right;">${STATE.settings.personalization.cardScale || 1}x</span>
                         </div>
                     </div>
+                    <div class="settings-group">
+                        <label class="settings-label">
+                            <input type="checkbox" ${STATE.settings.personalization.hideSearchBar ? 'checked' : ''} 
+                                   onchange="STATE.settings.personalization.hideSearchBar = this.checked; saveState(); renderCards();" 
+                                   style="margin-right:5px;">
+                            Hide Search Bar on Home Screen
+                        </label>
+                    </div>
+                `;
+            case 'case':
+                return `
+                    <div class="settings-group">
+                        <label class="settings-label">Image Size</label>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <input type="range" min="100" max="400" value="${STATE.settings.imageSize}" 
+                                   oninput="this.nextElementSibling.textContent = this.value + 'px'; STATE.settings.imageSize = parseInt(this.value); saveState();"
+                                   style="flex:1;">
+                            <span style="min-width:60px;text-align:right;">${STATE.settings.imageSize}px</span>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <button class="btn btn-primary" style="width:100%;margin-bottom:8px;" onclick="openDefaultTrackedPiecesModalInline();">Default Tracked Pieces</button>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">
+                            <input type="checkbox" ${STATE.settings.personalization.hideActualStateButton ? 'checked' : ''} 
+                                   onchange="STATE.settings.personalization.hideActualStateButton = this.checked; saveState(); liveUpdateCaseModal();" 
+                                   style="margin-right:5px;">
+                            Hide "Show Actual State" Button
+                        </label>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">
+                            <input type="checkbox" ${STATE.settings.personalization.hideChangeTrackedPiecesButton ? 'checked' : ''} 
+                                   onchange="STATE.settings.personalization.hideChangeTrackedPiecesButton = this.checked; saveState(); liveUpdateCaseModal();" 
+                                   style="margin-right:5px;">
+                            Hide "Change Tracked Pieces" Button
+                        </label>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">
+                            <input type="checkbox" ${STATE.settings.personalization.hideReferenceSchemeButton ? 'checked' : ''} 
+                                   onchange="STATE.settings.personalization.hideReferenceSchemeButton = this.checked; saveState(); liveUpdateCaseModal();" 
+                                   style="margin-right:5px;">
+                            Hide "Show Reference Scheme" Button
+                        </label>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">
+                            <input type="checkbox" ${STATE.settings.personalization.swapAlgorithmDisplay ? 'checked' : ''} 
+                                   onchange="STATE.settings.personalization.swapAlgorithmDisplay = this.checked; saveState(); liveUpdateCaseModal();" 
+                                   style="margin-right:5px;">
+                            Swap Input & Normalized Algorithm Display
+                        </label>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">
+                            <input type="checkbox" ${STATE.settings.personalization.enableMobileView ? 'checked' : ''} 
+                                   onchange="STATE.settings.personalization.enableMobileView = this.checked; saveState(); liveUpdateCaseModal();" 
+                                   style="margin-right:5px;">
+                            Enable Mobile View (Vertical Layout)
+                        </label>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">
+                            <input type="checkbox" ${STATE.settings.personalization.hideOverrideTrackedPieces ? 'checked' : ''} 
+                                   onchange="STATE.settings.personalization.hideOverrideTrackedPieces = this.checked; saveState();" 
+                                   style="margin-right:5px;">
+                            Hide Override Tracked Pieces in Edit Modal
+                        </label>
+                    </div>
+                `;
+            case 'training':
+                return renderTrainingSettings();
+            case 'memo':
+                return renderMemoSettings();
+            default:
+                return '';
+        }
+    }
+    
+    function renderTrainingSettings() {
+        if (!window.trainingSettings) window.trainingSettings = loadTrainingSettings();
+        return `
+            <div class="settings-group">
+                <label class="settings-label">Scramble Text Size</label>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <input type="range" min="10" max="24" value="${window.trainingSettings.scrambleTextSize}" 
+                           oninput="updateTrainingTextSize(parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px';"
+                           style="flex:1;">
+                    <span style="min-width:50px;text-align:right;">${window.trainingSettings.scrambleTextSize}px</span>
                 </div>
+            </div>
+            <div class="settings-group">
+                <label class="settings-label">Scramble Image Size</label>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <input type="range" min="150" max="400" value="${window.trainingSettings.scrambleImageSize}" 
+                           oninput="updateTrainingImageSize(parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px';"
+                           style="flex:1;">
+                    <span style="min-width:60px;text-align:right;">${window.trainingSettings.scrambleImageSize}px</span>
+                </div>
+            </div>
+            <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;margin-top:15px;">
+                <label class="settings-label">Display Options</label>
+                <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+                    <label style="display:flex;align-items:center;gap:5px;">
+                        <input type="checkbox" ${window.trainingSettings.showCaseName ? 'checked' : ''} 
+                               onchange="updateTrainingDisplayOption('showCaseName', this.checked)"
+                               style="margin:0;">
+                        <span style="font-size:13px;">Show Case Name</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:5px;">
+                        <input type="checkbox" ${window.trainingSettings.showParity ? 'checked' : ''} 
+                               onchange="updateTrainingDisplayOption('showParity', this.checked)"
+                               style="margin:0;">
+                        <span style="font-size:13px;">Show Parity</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:5px;">
+                        <input type="checkbox" ${window.trainingSettings.showOrientation ? 'checked' : ''} 
+                               onchange="updateTrainingDisplayOption('showOrientation', this.checked)"
+                               style="margin:0;">
+                        <span style="font-size:13px;">Show Orientation</span>
+                    </label>
+                </div>
+            </div>
+            <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;margin-top:15px;">
+                <label class="settings-label">
+                    <input type="checkbox" ${window.trainingSettings.lockOrientation ? 'checked' : ''} 
+                           onchange="updateTrainingLockOrientation(this.checked)"
+                           style="margin-right:5px;">
+                    Lock Orientation
+                </label>
+            </div>
+            <div class="settings-group" style="display:${window.trainingSettings.lockOrientation ? 'none' : 'block'};" id="allowMirrorContainer">
+                <label class="settings-label">
+                    <input type="checkbox" ${window.trainingSettings.allowMirror ? 'checked' : ''} 
+                           onchange="updateTrainingAllowMirror(this.checked)"
+                           style="margin-right:5px;">
+                    Allow Mirror
+                </label>
+            </div>
+            <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;margin-top:15px;">
+                <label class="settings-label">
+                    <input type="checkbox" ${window.trainingSettings.disableStartCue ? 'checked' : ''} 
+                           onchange="window.trainingSettings.disableStartCue = this.checked; saveTrainingSettings();"
+                           style="margin-right:5px;">
+                    Turn Off Starting Cue (Remove 0.3s Hold)
+                </label>
+            </div>
+        `;
+    }
+    
+    function renderMemoSettings() {
+        if (!window.memoTrainingSettings) loadMemoTrainingSettings();
+        return `
+            <div class="settings-group">
+                <label class="settings-label">Image Size</label>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <input type="range" min="150" max="400" value="${window.memoTrainingSettings.imageSize}" 
+                           oninput="updateMemoImageSize(parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px';"
+                           style="flex:1;">
+                    <span style="min-width:60px;text-align:right;">${window.memoTrainingSettings.imageSize}px</span>
+                </div>
+            </div>
+            <div class="settings-group">
+                <label class="settings-label">
+                    <input type="checkbox" ${window.memoTrainingSettings.lockOrientation ? 'checked' : ''} 
+                           onchange="updateMemoLockOrientation(this.checked)"
+                           style="margin-right:5px;">
+                    Lock Orientation
+                </label>
+            </div>
+            <div class="settings-group" style="display:${window.memoTrainingSettings.lockOrientation ? 'none' : 'block'};" id="memoAllowMirrorContainer">
+                <label class="settings-label">
+                    <input type="checkbox" ${window.memoTrainingSettings.allowMirror ? 'checked' : ''} 
+                           onchange="updateMemoAllowMirror(this.checked)"
+                           style="margin-right:5px;">
+                    Allow Mirror
+                </label>
+            </div>
+            <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;margin-top:15px;">
+                <label class="settings-label">Piece Order</label>
+                <div style="padding:10px;background:#f0f0f0;border-radius:4px;font-size:13px;margin-bottom:10px;font-family:monospace;">
+                    Current Order: ${window.memoTrainingSettings.pieceOrder.map(hex => translateHexToPieceCode(hex)).join(' → ')}
+                </div>
+                <button class="btn" onclick="openMemoOrderConfigModal()">Configure Piece Order</button>
+            </div>
+        `;
+    }
+    
+    function updateTabContent() {
+        const contentArea = document.getElementById('settingsTabContent');
+        if (contentArea) {
+            contentArea.innerHTML = renderTabContent(activeTab);
+        }
+    }
+    
+    function renderTabs() {
+        let tabsHtml = '<div style="display:flex;flex-direction:column;gap:5px;padding:10px;background:#f5f5f5;border-right:1px solid #ddd;min-width:60px;">';
+        
+        for (const [key, tab] of Object.entries(tabs)) {
+            const isActive = activeTab === key;
+            const isDisabled = !tab.enabled;
+            const bgColor = isActive ? '#007bff' : (isDisabled ? '#f0f0f0' : '#fff');
+            const textColor = isActive ? '#fff' : (isDisabled ? '#999' : '#333');
+            const cursor = isDisabled ? 'not-allowed' : 'pointer';
+            const opacity = isDisabled ? '0.5' : '1';
+            
+            tabsHtml += `
+                <button onclick="${isDisabled ? '' : `window.switchSettingsTab('${key}')`}" 
+                        style="padding:12px;background:${bgColor};color:${textColor};border:1px solid #ddd;cursor:${cursor};opacity:${opacity};border-radius:4px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;"
+                        ${isDisabled ? 'disabled' : ''}
+                        title="${key.charAt(0).toUpperCase() + key.slice(1)} Settings">
+                    <img src="res/${tab.icon}.svg" style="width:24px;height:24px;">
+                </button>
             `;
+        }
+        
+        tabsHtml += '</div>';
+        return tabsHtml;
+    }
+    
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:700px;max-height:85vh;margin:auto;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;">
+            <div class="modal-header">
+                <h3>Settings</h3>
+                <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
+            </div>
+            <div style="display:flex;flex:1;overflow:hidden;">
+                ${renderTabs()}
+                <div id="settingsTabContent" style="flex:1;padding:20px;overflow-y:auto;">
+                    ${renderTabContent(activeTab)}
+                </div>
+            </div>
+        </div>
+    `;
+    
     document.body.appendChild(modal);
+    
+    window.switchSettingsTab = function(tabId) {
+        activeTab = tabId;
+        updateTabContent();
+    };
+    
     modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+}
+
+function updateGlobalColor(colorKey, value) {
+    if (!STATE.settings.colorScheme) {
+        STATE.settings.colorScheme = {
+            topColor: '#000000',
+            bottomColor: '#FFFFFF',
+            frontColor: '#CC0000',
+            rightColor: '#00AA00',
+            backColor: '#FF8C00',
+            leftColor: '#0066CC',
+            dividerColor: '#7a0000',
+            circleColor: 'transparent'
+        };
+    }
+    STATE.settings.colorScheme[colorKey] = value;
+    saveState();
+    
+    // Live update case modal if open
+    const openModal = document.querySelector('.modal-content');
+    if (openModal && openModal.querySelector('[id^="cases-container-"]')) {
+        const containerId = openModal.querySelector('[id^="cases-container-"]').id;
+        const cardIdx = parseInt(containerId.split('-')[2]);
+        if (!isNaN(cardIdx)) {
+            renderCases(cardIdx);
+        }
+    }
+}
+
+function openColorMappingModalInline() {
+    openColorMappingModal();
+}
+
+function openDefaultTrackedPiecesModalInline() {
+    openDefaultTrackedPiecesModal();
+}
+
+function openMemoOrderConfigModal() {
+    openMemoTrainingSettingsModal();
 }
 
 
@@ -242,7 +575,7 @@ function openPersonalizationModal() {
                 <div class="settings-group">
                     <label class="settings-label">
                         <input type="checkbox" ${STATE.settings.personalization.hideActualStateButton ? 'checked' : ''} 
-                               onchange="STATE.settings.personalization.hideActualStateButton = this.checked; saveState();" 
+                               onchange="STATE.settings.personalization.hideActualStateButton = this.checked; saveState(); liveUpdateCaseModal();" 
                                style="margin-right:5px;">
                         Hide "Show Actual State" Button
                     </label>
@@ -250,7 +583,7 @@ function openPersonalizationModal() {
                 <div class="settings-group">
                     <label class="settings-label">
                         <input type="checkbox" ${STATE.settings.personalization.hideChangeTrackedPiecesButton ? 'checked' : ''} 
-                               onchange="STATE.settings.personalization.hideChangeTrackedPiecesButton = this.checked; saveState();" 
+                               onchange="STATE.settings.personalization.hideChangeTrackedPiecesButton = this.checked; saveState(); liveUpdateCaseModal();" 
                                style="margin-right:5px;">
                         Hide "Change Tracked Pieces" Button
                     </label>
@@ -258,7 +591,7 @@ function openPersonalizationModal() {
                 <div class="settings-group">
                     <label class="settings-label">
                         <input type="checkbox" ${STATE.settings.personalization.hideReferenceSchemeButton ? 'checked' : ''} 
-                               onchange="STATE.settings.personalization.hideReferenceSchemeButton = this.checked; saveState();" 
+                               onchange="STATE.settings.personalization.hideReferenceSchemeButton = this.checked; saveState(); liveUpdateCaseModal();" 
                                style="margin-right:5px;">
                         Hide "Show Reference Scheme" Button
                     </label>
@@ -266,7 +599,7 @@ function openPersonalizationModal() {
                 <div class="settings-group">
                     <label class="settings-label">
                         <input type="checkbox" ${STATE.settings.personalization.swapAlgorithmDisplay ? 'checked' : ''} 
-                               onchange="STATE.settings.personalization.swapAlgorithmDisplay = this.checked; saveState();" 
+                               onchange="STATE.settings.personalization.swapAlgorithmDisplay = this.checked; saveState(); liveUpdateCaseModal();" 
                                style="margin-right:5px;">
                         Swap Input & Normalized Algorithm Display
                     </label>
@@ -274,7 +607,7 @@ function openPersonalizationModal() {
                 <div class="settings-group">
                     <label class="settings-label">
                         <input type="checkbox" ${STATE.settings.personalization.enableMobileView ? 'checked' : ''} 
-                               onchange="STATE.settings.personalization.enableMobileView = this.checked; saveState();" 
+                               onchange="STATE.settings.personalization.enableMobileView = this.checked; saveState(); liveUpdateCaseModal();" 
                                style="margin-right:5px;">
                         Enable Mobile View (Vertical Layout)
                     </label>
@@ -364,4 +697,52 @@ function importData(input) {
         }
     };
     reader.readAsText(file);
+}
+
+function importData(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const imported = JSON.parse(e.target.result);
+            
+            // Import training settings if present
+            if (imported.trainingSettings) {
+                localStorage.setItem('sq1TrainingSettings', JSON.stringify(imported.trainingSettings));
+                delete imported.trainingSettings;
+            }
+            
+            if (imported.memoTrainingSettings) {
+                localStorage.setItem('sq1MemoTrainingSettings', JSON.stringify(imported.memoTrainingSettings));
+                delete imported.memoTrainingSettings;
+            }
+            
+            if (imported.memoSelectedCases) {
+                localStorage.setItem('sq1MemoSelectedCases', JSON.stringify(imported.memoSelectedCases));
+                delete imported.memoSelectedCases;
+            }
+            
+            // Import main state
+            Object.assign(STATE, imported);
+            saveState();
+            renderCards();
+            showConfirmModal('Import Success', 'Data imported successfully!', () => { });
+        } catch (err) {
+            showConfirmModal('Import Error', 'Error importing data: ' + err.message, () => { });
+        }
+    };
+    reader.readAsText(file);
+}
+
+function liveUpdateCaseModal() {
+    const openModal = document.querySelector('.modal-content');
+    if (openModal && openModal.querySelector('[id^="cases-container-"]')) {
+        const containerId = openModal.querySelector('[id^="cases-container-"]').id;
+        const cardIdx = parseInt(containerId.split('-')[2]);
+        if (!isNaN(cardIdx)) {
+            renderCases(cardIdx);
+        }
+    }
 }

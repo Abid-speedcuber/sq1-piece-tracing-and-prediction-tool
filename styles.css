@@ -37,6 +37,8 @@ body {
 .topbar-left {
     font-size: 18px;
     font-weight: 600;
+    display: flex;
+    align-items: center;
 }
 
 .topbar-right {
@@ -410,65 +412,6 @@ body {
 
 .sidebar-dropdown-item:hover {
     background: #e0e0e0;
-}
-
-@media (max-width: 768px) {
-    .sidebar {
-        top: auto;
-        bottom: -100%;
-        left: 0;
-        width: 100%;
-        height: auto;
-        max-height: 60vh;
-        border-right: none;
-        border-top: 1px solid #ddd;
-        transition: bottom 0.3s ease;
-    }
-    
-    .sidebar.open {
-        bottom: 0;
-        left: 0;
-    }
-    
-    .sidebar-header {
-        flex-direction: row-reverse;
-    }
-    
-    .sidebar-content {
-        max-height: calc(60vh - 60px);
-    }
-    
-    .sidebar-header h3 {
-        display: none;
-    }
-    
-    .sidebar-item {
-        justify-content: center;
-        padding: 12px;
-    }
-    
-    .sidebar-dropdown-item span {
-        display: block;
-    }
-    
-    .sidebar-dropdown-item {
-        padding: 10px 20px;
-        text-align: center;
-    }
-    
-    .sidebar-dropdown {
-        position: absolute;
-        bottom: 100%;
-        left: 0;
-        right: 0;
-        background: #f5f5f5;
-        border-top: 1px solid #ddd;
-        max-height: 0;
-    }
-    
-    .sidebar-dropdown.open {
-        max-height: 150px;
-    }
 }
 
 .modal-body::-webkit-scrollbar {

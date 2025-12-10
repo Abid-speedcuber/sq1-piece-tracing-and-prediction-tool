@@ -152,7 +152,7 @@ function openMemoTrainingModal() {
             endTrainingSession();
         });
     });
-    document.getElementById('memoSettingsBtn').addEventListener('click', openMemoTrainingSettingsModal);
+    document.getElementById('memoSettingsBtn').addEventListener('click', () => openSettingsModal('memo'));
     document.getElementById('memoCloseBtn').addEventListener('click', () => modal.remove());
 
     updateSelectedCasesInfo();
