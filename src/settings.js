@@ -240,7 +240,7 @@ function openSettingsModal(context = 'sidebar') {
             <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;margin-top:15px;">
                 <label class="settings-label">
                     <input type="checkbox" ${window.trainingSettings.disableStartCue ? 'checked' : ''} 
-                           onchange="window.trainingSettings.disableStartCue = this.checked; saveTrainingSettings();"
+                           onchange="updateTrainingDisableStartCue(this.checked)"
                            style="margin-right:5px;">
                     Turn Off Starting Cue (Remove 0.3s Hold)
                 </label>

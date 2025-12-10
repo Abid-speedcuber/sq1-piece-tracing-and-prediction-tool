@@ -136,6 +136,7 @@ function loadTrainingSettings() {
         showCaseName: true,
         showParity: true,
         showOrientation: false,
+        disableStartCue: false,
         colorScheme: {
             topColor: '#000000',
             bottomColor: '#FFFFFF',
@@ -694,6 +695,11 @@ function updateTrainingAllowMirror(value) {
     saveTrainingSettings();
 }
 
+function updateTrainingDisableStartCue(value) {
+    trainingSettings.disableStartCue = value;
+    saveTrainingSettings();
+}
+
 function regenerateTrainingImageWithSize(scrambleData) {
     try {
         const card = STATE.cards[currentTrainingCardIdx];
@@ -979,6 +985,18 @@ function handleTrainingTimerMouseDown() {
         timerEl.style.color = '#ffc107';
     } else {
         timerEl.style.color = '#ef4444';
+        // Start checking for threshold
+        const checkInterval = setInterval(() => {
+            if (!trainingIsHolding) {
+                clearInterval(checkInterval);
+                return;
+            }
+            const holdDuration = Date.now() - trainingHoldStartTime;
+            if (holdDuration >= TIMER_HOLD_THRESHOLD) {
+                timerEl.style.color = '#22c55e';
+                clearInterval(checkInterval);
+            }
+        }, 50);
     }
 }
 
@@ -1022,6 +1040,18 @@ function handleTrainingTimerTouchStart(e) {
         timerEl.style.color = '#ffc107';
     } else {
         timerEl.style.color = '#ef4444';
+        // Start checking for threshold
+        const checkInterval = setInterval(() => {
+            if (!trainingIsHolding) {
+                clearInterval(checkInterval);
+                return;
+            }
+            const holdDuration = Date.now() - trainingHoldStartTime;
+            if (holdDuration >= TIMER_HOLD_THRESHOLD) {
+                timerEl.style.color = '#22c55e';
+                clearInterval(checkInterval);
+            }
+        }, 50);
     }
 }
 
@@ -1035,7 +1065,7 @@ function handleTrainingTimerTouchEnd(e) {
         stopTrainingTimerOnly();
     } else if (trainingIsHolding) {
         const holdDuration = Date.now() - trainingHoldStartTime;
-        trainingIsHolding = false;
+        trainingIsHolding = false; 
         timerEl.style.color = '#2d3748';
         
         if (holdDuration >= TIMER_HOLD_THRESHOLD) {
@@ -1106,26 +1136,6 @@ function startPeeking() {
             return; // No tracked pieces, nothing to show
         }
 
-        // Get the original solution/algorithm from the case
-        let solution = caseItem.solution || '';
-        const expandedSolution = window.ScrambleNormalizer.normalizeScramble(solution);
-        const originalScramble = pleaseInvertThisScrambleForSolutionVisualization(expandedSolution);
-        
-        // Convert original scramble to hex
-        const originalCubeState = applyScrambleToCubePlease(originalScramble);
-        let originalHex = pleaseEncodeMyCubeStateToHexNotation(originalCubeState);
-
-        // Apply the SAME RBL transformation to original hex
-        const originalData = currentData.result;
-        if (originalData && originalData.rblApplied) {
-            originalHex = applyRBL(originalHex, originalData.rul, originalData.rdl);
-        }
-
-        // Apply the SAME mirror transformation to original hex
-        if (originalData && originalData.mirrorApplied) {
-            originalHex = applyMirrorToHex(originalHex);
-        }
-
         const colorScheme = trainingSettings.colorScheme || {
             topColor: '#000000',
             bottomColor: '#FFFFFF',
@@ -1147,14 +1157,17 @@ function startPeeking() {
             });
         }
 
-        // Generate unlabeled image of current scramble (randomized)
+        // Use the SAME hex for both base image and labels - the current scramble hex
+        const scrambleHex = currentData.hex;
+
+        // Generate unlabeled image of current scramble
         const baseImage = window.Square1VisualizerLibraryWithSillyNames.visualizeFromHexCodePlease(
-            currentData.hex, trainingSettings.scrambleImageSize, colorScheme, 5, false, null
+            scrambleHex, trainingSettings.scrambleImageSize, colorScheme, 5, false, null
         );
 
-        // Generate label-only overlay from original hex (with transformations applied)
+        // Generate label-only overlay from the SAME hex
         const labelOverlay = window.Square1VisualizerLibraryWithSillyNames.visualizeLabelsOnlyPlease(
-            originalHex, trainingSettings.scrambleImageSize, 5, pieceLabels
+            scrambleHex, trainingSettings.scrambleImageSize, 5, pieceLabels
         );
 
         // Combine: base image with label overlay on top
@@ -1460,10 +1473,23 @@ document.addEventListener('keydown', (e) => {
         if (!trainingSpacePressed) {
             trainingSpacePressed = true;
             const timerEl = document.getElementById('trainingTimer');
+            trainingHoldStartTime = Date.now();
             if (trainingSettings.disableStartCue) {
                 timerEl.style.color = '#ffc107';
             } else {
                 timerEl.style.color = '#ef4444';
+                // Start checking for threshold
+                const checkInterval = setInterval(() => {
+                    if (!trainingIsHolding) {
+                        clearInterval(checkInterval);
+                        return;
+                    }
+                    const holdDuration = Date.now() - trainingHoldStartTime;
+                    if (holdDuration >= TIMER_HOLD_THRESHOLD) {
+                        timerEl.style.color = '#22c55e';
+                        clearInterval(checkInterval);
+                    }
+                }, 50);
             }
             if (!trainingTimerRunning) {
                 trainingIsHolding = true;
