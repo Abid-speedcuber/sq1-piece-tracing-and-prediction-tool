@@ -309,6 +309,7 @@ function openCaseSelectionModal() {
                 parity: caseItem.type === 'parity' ? 'Odd' : 'Even',
                 orientation: caseItem.variant === 'original' ? 'Original' : 'Mirror',
                 algorithm: caseItem.solution || 'No algorithm',
+                caseName: caseItem.customName || (card.title || 'Case') + (caseIdx + 1),
                 selected: isCaseSelected(cardIdx, caseIdx)
             });
         });
@@ -330,7 +331,7 @@ function openCaseSelectionModal() {
                     <td>${caseData.cardTitle}</td>
                     <td>${caseData.parity}</td>
                     <td>${caseData.orientation}</td>
-                    <td>Angle ${caseData.caseIdx + 1}</td>
+                    <td>${caseData.caseName}</td>
                     <td style="font-family:monospace;font-size:11px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${caseData.algorithm}</td>
                 </tr>
             `;

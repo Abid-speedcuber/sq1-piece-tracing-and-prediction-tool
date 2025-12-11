@@ -253,7 +253,10 @@ function renderCards(searchQuery = '') {
         const previewFontSize = 12 * scale;
         
         cardEl.innerHTML = `
-    ${STATE.editMode ? `<button class="card-delete-btn" onclick="deleteCard(${idx}, event)"><img src="res/delete.svg" style="width:${14 * scale}px;height:${14 * scale}px;"></button>` : ''}
+    ${STATE.editMode ? `
+        <button class="card-delete-btn" onclick="deleteCard(${idx}, event)"><img src="res/delete.svg" style="width:${14 * scale}px;height:${14 * scale}px;"></button>
+        <button class="card-edit-btn" onclick="openEditCardNameModal(${idx}, event)" style="position:absolute;top:8px;right:40px;width:28px;height:28px;border:none;background:#007bff;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,0.2);z-index:2;"><img src="res/edit.svg" style="width:${14 * scale}px;height:${14 * scale}px;"></button>
+    ` : ''}
     <div style="display:flex;flex-direction:column;gap:${8 * scale}px;">
         <div style="position:relative;width:100%;height:${imageHeight}px;overflow:hidden;display:flex;justify-content:center;align-items:center;background:#f9f9f9;border:1px solid #e0e0e0;">
             <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(1.3);transform-origin:center center;">
@@ -534,6 +537,67 @@ function deleteCard(idx, event) {
         saveState();
         renderCards();
     });
+}
+
+function openEditCardNameModal(idx, event) {
+    if (event) event.stopPropagation();
+    const card = STATE.cards[idx];
+    const currentName = card.title || '';
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'block';
+    
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header">
+                <h3>Edit Card Name</h3>
+                <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
+            </div>
+            <div class="modal-body">
+                <label class="settings-label">Card Name</label>
+                <input type="text" id="editCardNameInput" class="settings-input" value="${currentName}" style="width:100%;padding:8px;margin-top:5px;">
+            </div>
+            <div style="padding:15px;text-align:right;border-top:1px solid #ddd;display:flex;gap:10px;justify-content:flex-end;">
+                <button class="btn" onclick="this.closest('.modal').remove()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveCardName(${idx})">Save</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Focus input and select text
+    setTimeout(() => {
+        const input = document.getElementById('editCardNameInput');
+        if (input) {
+            input.focus();
+            input.select();
+        }
+    }, 100);
+    
+    // Handle Enter key
+    document.getElementById('editCardNameInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            saveCardName(idx);
+        }
+    });
+    
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+}
+
+function saveCardName(idx) {
+    const input = document.getElementById('editCardNameInput');
+    const newName = input.value.trim();
+    
+    if (newName) {
+        STATE.cards[idx].title = newName;
+        saveState();
+        renderCards();
+    }
+    
+    const modal = input.closest('.modal');
+    if (modal) modal.remove();
 }
 
 document.getElementById('addCardBtn').onclick = () => {

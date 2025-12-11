@@ -1,0 +1,21 @@
+<svg width="260" height="260" viewBox="0 0 260 260">
+    <circle cx="130" cy="130" r="114.4" fill="transparent" stroke="rgba(0,0,0,0.08)"
+        stroke-width="0"></circle>
+    <circle cx="130" cy="130" r="5.2" fill="rgba(0,0,0,0.06)"></circle>
+    <polygon points="130.00,130.00 148.84,59.68 111.16,59.68" fill="transparent" stroke="#333"
+        stroke-width="2.6"></polygon>
+    <polygon points="130.00,130.00 111.16,59.68 78.52,78.52" fill="transparent" stroke="#333"
+        stroke-width="2.6"></polygon>
+    <polygon points="130.00,130.00 59.68,148.84 33.94,104.26 78.52,78.52" fill="transparent"
+        stroke="#333" stroke-width="2.6"></polygon>
+    <polygon points="130.00,130.00 111.16,200.32 59.68,200.32 59.68,148.84" fill="transparent"
+        stroke="#333" stroke-width="2.6"></polygon>
+    <polygon points="130.00,130.00 111.16,200.32 148.84,200.32" fill="transparent" stroke="#333"
+        stroke-width="2.6"></polygon>
+    <polygon points="130.00,130.00 200.32,148.84 200.32,200.32 148.84,200.32" fill="transparent"
+        stroke="#333" stroke-width="2.6"></polygon>
+    <polygon points="130.00,130.00 181.48,78.52 226.06,104.26 200.32,148.84" fill="transparent"
+        stroke="#333" stroke-width="2.6"></polygon>
+    <polygon points="130.00,130.00 181.48,78.52 148.84,59.68" fill="transparent" stroke="#333"
+        stroke-width="2.6"></polygon>
+</svg>

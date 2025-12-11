@@ -146,8 +146,11 @@ function renderCases(cardIdx) {
             
             caseCard.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <strong style="font-size:16px;">Angle ${caseIdx + 1}</strong>
-        <button class="icon-btn" style="width:32px;height:32px;" onclick="toggleCaseEditMode(${cardIdx}, ${actualIdx})" title="Edit">
+        <strong style="font-size:16px;">${caseItem.customName || (card.title || 'Case') + (caseIdx + 1)}</strong>
+        <button class="icon-btn" style="width:32px;height:32px;margin-right:8px;" onclick="openEditCaseNameModal(${cardIdx}, ${actualIdx}, event)" title="Edit Name">
+                    <img src="res/edit.svg" style="width:16px;height:16px;">
+                </button>
+                <button class="icon-btn" style="width:32px;height:32px;" onclick="toggleCaseEditMode(${cardIdx}, ${actualIdx})" title="Edit Case">
             <img src="res/edit.svg" style="width:16px;height:16px;">
         </button>
     </div>
@@ -184,8 +187,11 @@ function renderCases(cardIdx) {
         } else {
             caseCard.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <strong style="font-size:16px;">Angle ${caseIdx + 1}</strong>
-        <button class="icon-btn" style="width:32px;height:32px;" onclick="toggleCaseEditMode(${cardIdx}, ${actualIdx})" title="Edit">
+        <strong style="font-size:16px;">${caseItem.customName || (card.title || 'Case') + (caseIdx + 1)}</strong>
+        <button class="icon-btn" style="width:32px;height:32px;margin-right:8px;" onclick="openEditCaseNameModal(${cardIdx}, ${actualIdx}, event)" title="Edit Name">
+                    <img src="res/edit.svg" style="width:16px;height:16px;">
+                </button>
+                <button class="icon-btn" style="width:32px;height:32px;" onclick="toggleCaseEditMode(${cardIdx}, ${actualIdx})" title="Edit Case">
             <img src="res/edit.svg" style="width:16px;height:16px;">
         </button>
     </div>
@@ -240,7 +246,8 @@ function addCase(cardIdx) {
         solution: '',
         imageHtml: '',
         overrideTracking: false,
-        customTrackedPieces: []
+        customTrackedPieces: [],
+        customName: ''
     };
     card.cases.push(newCase);
     saveState();
@@ -470,6 +477,69 @@ function renderPieceGrid(cardIdx, caseIdx, trackedPieces) {
 
 function toggleCaseEditMode(cardIdx, caseIdx) {
     openCaseEditModal(cardIdx, caseIdx);
+}
+
+function openEditCaseNameModal(cardIdx, caseIdx, event) {
+    if (event) event.stopPropagation();
+    
+    const card = STATE.cards[cardIdx];
+    const caseItem = card.cases[caseIdx];
+    const currentName = caseItem.customName || '';
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'block';
+    
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header">
+                <h3>Edit Case Name</h3>
+                <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
+            </div>
+            <div class="modal-body">
+                <label class="settings-label">Case Name</label>
+                <input type="text" id="editCaseNameInput" class="settings-input" value="${currentName}" placeholder="${(card.title || 'Case') + (caseIdx + 1)}" style="width:100%;padding:8px;margin-top:5px;">
+                <p style="font-size:12px;color:#666;margin-top:8px;">Leave empty to use default name: ${(card.title || 'Case') + (caseIdx + 1)}</p>
+            </div>
+            <div style="padding:15px;text-align:right;border-top:1px solid #ddd;display:flex;gap:10px;justify-content:flex-end;">
+                <button class="btn" onclick="this.closest('.modal').remove()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveCaseName(${cardIdx}, ${caseIdx})">Save</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Focus input and select text
+    setTimeout(() => {
+        const input = document.getElementById('editCaseNameInput');
+        if (input) {
+            input.focus();
+            input.select();
+        }
+    }, 100);
+    
+    // Handle Enter key
+    document.getElementById('editCaseNameInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            saveCaseName(cardIdx, caseIdx);
+        }
+    });
+    
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+}
+
+function saveCaseName(cardIdx, caseIdx) {
+    const input = document.getElementById('editCaseNameInput');
+    const newName = input.value.trim();
+    
+    // Store custom name (empty string if user cleared it)
+    STATE.cards[cardIdx].cases[caseIdx].customName = newName;
+    saveState();
+    renderCases(cardIdx);
+    
+    const modal = input.closest('.modal');
+    if (modal) modal.remove();
 }
 
 function openCaseEditModal(cardIdx, caseIdx) {
