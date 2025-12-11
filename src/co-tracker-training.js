@@ -68,8 +68,8 @@ function getTrainingTitleText() {
     const orientation = caseItem.variant === 'original' ? 'Original' : 'Mirror';
     
     const showName = trainingSettings.showCaseName;
-    const showParity = trainingSettings.showParity;
-    const showOrientation = trainingSettings.showOrientation;
+    const showParity = trainingSettings.showParity && getParityVisibility();
+    const showOrientation = trainingSettings.showOrientation && getOrientationVisibility();
     
     // Count how many are true
     const trueCount = [showName, showParity, showOrientation].filter(Boolean).length;
@@ -1362,4 +1362,32 @@ if (typeof window !== 'undefined') {
         openTrainingModal: openCOTrackerTrainingModal,
         closeTrainingModal: closeCOTrackerTrainingModal
     };
+}
+
+function getParityVisibility() {
+    // Check if any selected case has parity division enabled
+    if (!trainingSelectedCases || trainingSelectedCases.length === 0) return true;
+    
+    for (const key of trainingSelectedCases) {
+        const [cardIdx] = key.split('-').map(Number);
+        const card = STATE.cards[cardIdx];
+        if (card && card.divisionSettings && card.divisionSettings.byParity !== false) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function getOrientationVisibility() {
+    // Check if any selected case has orientation division enabled
+    if (!trainingSelectedCases || trainingSelectedCases.length === 0) return true;
+    
+    for (const key of trainingSelectedCases) {
+        const [cardIdx] = key.split('-').map(Number);
+        const card = STATE.cards[cardIdx];
+        if (card && card.divisionSettings && card.divisionSettings.byOrientation !== false) {
+            return true;
+        }
+    }
+    return false;
 }

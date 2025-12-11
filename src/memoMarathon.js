@@ -624,12 +624,19 @@ function loadNextMemoCase() {
         // Update biodata with path format
         const angleName = `angle${caseIdx + 1}`;
         const displayCaseName = caseItem.customName ? `${angleName} - ${caseItem.customName}` : angleName;
-        const pathParts = [
-            card.title || 'Untitled',
-            caseItem.variant === 'original' ? 'original' : 'mirror',
-            caseItem.type === 'parity' ? 'odd' : 'even',
-            displayCaseName
-        ];
+        const pathParts = [card.title || 'Untitled'];
+        
+        // Only add orientation if division is enabled
+        if (card.divisionSettings?.byOrientation !== false) {
+            pathParts.push(caseItem.variant === 'original' ? 'original' : 'mirror');
+        }
+        
+        // Only add parity if division is enabled
+        if (card.divisionSettings?.byParity !== false) {
+            pathParts.push(caseItem.type === 'parity' ? 'odd' : 'even');
+        }
+        
+        pathParts.push(displayCaseName);
         document.getElementById('biodataPath').textContent = pathParts.join(' / ');
         document.getElementById('biodataAlgorithm').textContent = caseItem.solution || 'No algorithm';
         

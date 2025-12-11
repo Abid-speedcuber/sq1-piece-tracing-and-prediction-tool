@@ -116,6 +116,20 @@ function openSettingsModal(context = 'sidebar') {
             case 'case':
                 return `
                     <div class="settings-group">
+                        <label class="settings-label" style="font-weight:600;font-size:15px;margin-bottom:10px;">CS Case Division</label>
+                        <div style="display:flex;flex-direction:column;gap:8px;padding:10px;background:#f5f5f5;border-radius:4px;">
+                            <label style="display:flex;align-items:center;gap:5px;">
+                                <input type="checkbox" checked disabled style="margin:0;">
+                                <span style="font-size:13px;color:#999;">By Parity (Global - Always On)</span>
+                            </label>
+                            <label style="display:flex;align-items:center;gap:5px;">
+                                <input type="checkbox" checked disabled style="margin:0;">
+                                <span style="font-size:13px;color:#999;">By Orientation (Global - Always On)</span>
+                            </label>
+                            <p style="font-size:12px;color:#666;margin:8px 0 0 0;font-style:italic;">Note: Per-card division settings can be configured in each card's settings modal</p>
+                        </div>
+                    </div>
+                    <div class="settings-group">
                         <label class="settings-label">Image Size</label>
                         <div style="display:flex;align-items:center;gap:10px;">
                             <input type="range" min="100" max="400" value="${STATE.settings.imageSize}" 
@@ -215,17 +229,17 @@ function openSettingsModal(context = 'sidebar') {
                                style="margin:0;">
                         <span style="font-size:13px;">Show Case Name</span>
                     </label>
-                    <label style="display:flex;align-items:center;gap:5px;">
+                    <label style="display:flex;align-items:center;gap:5px;${getParityVisibility() ? '' : 'opacity:0.5;'}">
                         <input type="checkbox" ${window.trainingSettings.showParity ? 'checked' : ''} 
                                onchange="updateTrainingDisplayOption('showParity', this.checked)"
-                               style="margin:0;">
-                        <span style="font-size:13px;">Show Parity</span>
+                               style="margin:0;" ${getParityVisibility() ? '' : 'disabled'}>
+                        <span style="font-size:13px;">Show Parity ${getParityVisibility() ? '' : '(N/A - All cards have parity off)'}</span>
                     </label>
-                    <label style="display:flex;align-items:center;gap:5px;">
+                    <label style="display:flex;align-items:center;gap:5px;${getOrientationVisibility() ? '' : 'opacity:0.5;'}">
                         <input type="checkbox" ${window.trainingSettings.showOrientation ? 'checked' : ''} 
                                onchange="updateTrainingDisplayOption('showOrientation', this.checked)"
-                               style="margin:0;">
-                        <span style="font-size:13px;">Show Orientation</span>
+                               style="margin:0;" ${getOrientationVisibility() ? '' : 'disabled'}>
+                        <span style="font-size:13px;">Show Orientation ${getOrientationVisibility() ? '' : '(N/A - All cards have orientation off)'}</span>
                     </label>
                 </div>
             </div>
