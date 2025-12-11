@@ -332,9 +332,23 @@ function updateSelectedCasesInfo() {
             <div style="display:flex;gap:10px;align-items:center;justify-content:center;max-width:600px;margin:0 auto;">
                 <button class="btn" onclick="openCaseSelectionModal()">${memoSelectedCases.length} case(s) selected</button>
                 <button class="btn" onclick="openModeSelectionModal()">Select Mode</button>
-                <button class="btn btn-primary" onclick="startMemoTrainingDirectly()">Start Training</button>
+                <button class="btn btn-primary" id="memoMainToggleBtn" onclick="toggleMemoTraining()">Start Training</button>
             </div>
         `;
+    }
+}
+
+function toggleMemoTraining() {
+    if (memoTrainingState.isActive) {
+        showMemoConfirm('Are you sure you want to stop training?', () => {
+            endTrainingSession();
+        });
+    } else {
+        if (memoSelectedCases.length === 0) {
+            showMemoAlert('Please select at least one case');
+            return;
+        }
+        startMemoTrainingDirectly();
     }
 }
 
@@ -448,13 +462,18 @@ function startMemoTrainingWithMode() {
         inputLocked: false
     };
     
-    // Show training area and toggle button
+    // Show training area and update main button
     const trainingArea = document.getElementById('memoTrainingArea');
-    const toggleBtn = document.getElementById('memoToggleTrainingBtn');
     if (trainingArea) trainingArea.style.display = 'flex';
-    if (toggleBtn) {
-        toggleBtn.style.display = 'inline-block';
-        toggleBtn.textContent = 'Stop Training';
+    
+    const mainToggleBtn = document.getElementById('memoMainToggleBtn');
+    if (mainToggleBtn) {
+        mainToggleBtn.textContent = 'Stop Training';
+        mainToggleBtn.onclick = () => {
+            showMemoConfirm('Are you sure you want to stop training?', () => {
+                endTrainingSession();
+            });
+        };
     }
     
     // Update label text based on mode and error mode
@@ -539,13 +558,18 @@ function startMemoTrainingDirectly() {
         inputLocked: false
     };
 
-    // Show training area and toggle button
+    // Show training area and update main button
     const trainingArea = document.getElementById('memoTrainingArea');
-    const toggleBtn = document.getElementById('memoToggleTrainingBtn');
     if (trainingArea) trainingArea.style.display = 'flex';
-    if (toggleBtn) {
-        toggleBtn.style.display = 'inline-block';
-        toggleBtn.textContent = 'Stop Training';
+    
+    const mainToggleBtn = document.getElementById('memoMainToggleBtn');
+    if (mainToggleBtn) {
+        mainToggleBtn.textContent = 'Stop Training';
+        mainToggleBtn.onclick = () => {
+            showMemoConfirm('Are you sure you want to stop training?', () => {
+                endTrainingSession();
+            });
+        };
     }
     
     // Don't start timer yet - will start on first click
@@ -1353,9 +1377,15 @@ function endTrainingSession() {
     const container = document.getElementById('memoImageContainer');
     container.innerHTML = resultsHtml;
     
-    // Hide next and toggle buttons
-    document.getElementById('memoNextBtn').style.display = 'none';
-    document.getElementById('memoToggleTrainingBtn').style.display = 'none';
+    // Hide next button and reset main button
+    const nextBtn = document.getElementById('memoNextBtn');
+    if (nextBtn) nextBtn.style.display = 'none';
+    
+    const mainToggleBtn = document.getElementById('memoMainToggleBtn');
+    if (mainToggleBtn) {
+        mainToggleBtn.textContent = 'Start Training';
+        mainToggleBtn.onclick = () => toggleMemoTraining();
+    }
 }
 
 function resetMemoTraining() {
