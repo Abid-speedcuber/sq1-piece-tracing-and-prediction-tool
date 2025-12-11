@@ -119,7 +119,7 @@ function openSettingsModal(context = 'sidebar') {
                         <label class="settings-label">Image Size</label>
                         <div style="display:flex;align-items:center;gap:10px;">
                             <input type="range" min="100" max="400" value="${STATE.settings.imageSize}" 
-                                   oninput="this.nextElementSibling.textContent = this.value + 'px'; STATE.settings.imageSize = parseInt(this.value); saveState();"
+                                   oninput="this.nextElementSibling.textContent = this.value + 'px'; STATE.settings.imageSize = parseInt(this.value); saveState(); liveUpdateCaseModal();"
                                    style="flex:1;">
                             <span style="min-width:60px;text-align:right;">${STATE.settings.imageSize}px</span>
                         </div>
@@ -449,16 +449,7 @@ function updateGlobalColor(colorKey, value) {
     }
     STATE.settings.colorScheme[colorKey] = value;
     saveState();
-    
-    // Live update case modal if open
-    const openModal = document.querySelector('.modal-content');
-    if (openModal && openModal.querySelector('[id^="cases-container-"]')) {
-        const containerId = openModal.querySelector('[id^="cases-container-"]').id;
-        const cardIdx = parseInt(containerId.split('-')[2]);
-        if (!isNaN(cardIdx)) {
-            renderCases(cardIdx);
-        }
-    }
+    liveUpdateCaseModal();
 }
 
 function openColorMappingModalInline() {
@@ -836,6 +827,10 @@ function liveUpdateCaseModal() {
             renderCases(cardIdx);
         }
     }
+}
+
+function liveUpdateCaseSettingsChanges() {
+    liveUpdateCaseModal();
 }
 
 function initializeMemoOrderSelector() {

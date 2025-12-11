@@ -108,7 +108,8 @@ function renderCases(cardIdx) {
         const ringRadius = radiusOuter + (unit10vh * 0.4);
         const ringDistance = 5;
         const centerToCenterDistance = ringRadius * (2 + ringDistance / 100);
-        const totalImageWidth = Math.max(400, centerToCenterDistance + imageSize);
+        // Add 10% margin for safety + gap between columns
+        const totalImageWidth = Math.max(400, (centerToCenterDistance + imageSize) * 1.10 + 30);
         
         let columns = 1;
         
@@ -116,14 +117,14 @@ function renderCases(cardIdx) {
             if (screenWidth < 800) {
                 columns = 1;
             } else {
-                columns = Math.round(screenWidth / totalImageWidth);
+                columns = Math.floor(screenWidth / totalImageWidth);
             }
         } else {
             columns = 1;
         }
         
         // Limit columns to number of available cases
-        columns = Math.min(columns, cases.length);
+        columns = Math.min(Math.max(1, columns), cases.length);
         
         if (columns > 1) {
             container.style.display = 'grid';

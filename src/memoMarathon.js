@@ -1395,7 +1395,8 @@ function resetMemoTraining() {
 }
 
 function updateMemoImageSize(size) {
-    memoTrainingSettings.imageSize = size;
+    if (!window.memoTrainingSettings) loadMemoTrainingSettings();
+    window.memoTrainingSettings.imageSize = size;
     saveMemoTrainingSettings();
     
     // Regenerate current visualization with new size if training is active
@@ -1406,7 +1407,8 @@ function updateMemoImageSize(size) {
 }
 
 function updateMemoLockOrientation(value) {
-    memoTrainingSettings.lockOrientation = value;
+    if (!window.memoTrainingSettings) loadMemoTrainingSettings();
+    window.memoTrainingSettings.lockOrientation = value;
     saveMemoTrainingSettings();
     
     const mirrorContainer = document.getElementById('memoAllowMirrorContainer');
@@ -1416,7 +1418,8 @@ function updateMemoLockOrientation(value) {
 }
 
 function updateMemoAllowMirror(value) {
-    memoTrainingSettings.allowMirror = value;
+    if (!window.memoTrainingSettings) loadMemoTrainingSettings();
+    window.memoTrainingSettings.allowMirror = value;
     saveMemoTrainingSettings();
 }
 
