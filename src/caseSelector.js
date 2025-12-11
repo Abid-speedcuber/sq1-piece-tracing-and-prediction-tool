@@ -96,6 +96,10 @@ const CaseSelector = {
                 ? allCases.filter(c => c.cardTitle.toLowerCase().includes(searchQuery.toLowerCase()))
                 : allCases;
                 
+            const parityEnabled = STATE.settings.divisionSettings?.byParity !== false;
+            const orientationEnabled = STATE.settings.divisionSettings?.byOrientation !== false;
+            const colspan = 4 + (parityEnabled ? 1 : 0) + (orientationEnabled ? 1 : 0);
+                
             let html = '';
             filtered.forEach((caseData) => {
                 html += `
@@ -105,14 +109,14 @@ const CaseSelector = {
                                    onchange="window._caseSelectorToggle(${caseData.cardIdx}, ${caseData.caseIdx}, this.checked)">
                         </td>
                         <td>${caseData.cardTitle}</td>
-                        <td>${caseData.parity}</td>
-                        <td>${caseData.orientation}</td>
+                        ${parityEnabled ? `<td>${caseData.parity}</td>` : ''}
+                        ${orientationEnabled ? `<td>${caseData.orientation}</td>` : ''}
                         <td>${caseData.caseName}</td>
                         <td style="font-family:monospace;font-size:11px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${caseData.algorithm}</td>
                     </tr>
                 `;
             });
-            return html || '<tr><td colspan="6" style="text-align:center;color:#999;padding:20px;">No cases found</td></tr>';
+            return html || `<tr><td colspan="${colspan}" style="text-align:center;color:#999;padding:20px;">No cases found</td></tr>`;
         }
 
         modal.innerHTML = `
@@ -136,8 +140,8 @@ const CaseSelector = {
                                 <tr>
                                     <th style="width:60px;text-align:center;">Select</th>
                                     <th style="width:150px;">Card Name</th>
-                                    <th style="width:80px;">Parity</th>
-                                    <th style="width:100px;">Orientation</th>
+                                    ${STATE.settings.divisionSettings?.byParity !== false ? '<th style="width:80px;">Parity</th>' : ''}
+                                    ${STATE.settings.divisionSettings?.byOrientation !== false ? '<th style="width:100px;">Orientation</th>' : ''}
                                     <th style="width:80px;">Angle</th>
                                     <th>Algorithm</th>
                                 </tr>

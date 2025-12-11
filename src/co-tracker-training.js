@@ -67,9 +67,12 @@ function getTrainingTitleText() {
     const parity = caseItem.type === 'parity' ? 'Odd' : 'Even';
     const orientation = caseItem.variant === 'original' ? 'Original' : 'Mirror';
     
+    const parityEnabled = STATE.settings.divisionSettings?.byParity !== false;
+    const orientationEnabled = STATE.settings.divisionSettings?.byOrientation !== false;
+    
     const showName = trainingSettings.showCaseName;
-    const showParity = trainingSettings.showParity && getParityVisibility();
-    const showOrientation = trainingSettings.showOrientation && getOrientationVisibility();
+    const showParity = trainingSettings.showParity && parityEnabled;
+    const showOrientation = trainingSettings.showOrientation && orientationEnabled;
     
     // Count how many are true
     const trueCount = [showName, showParity, showOrientation].filter(Boolean).length;

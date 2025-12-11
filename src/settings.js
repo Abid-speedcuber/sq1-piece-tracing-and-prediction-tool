@@ -117,16 +117,22 @@ function openSettingsModal(context = 'sidebar') {
                 return `
                     <div class="settings-group">
                         <label class="settings-label" style="font-weight:600;font-size:15px;margin-bottom:10px;">CS Case Division</label>
-                        <div style="display:flex;flex-direction:column;gap:8px;padding:10px;background:#f5f5f5;border-radius:4px;">
-                            <label style="display:flex;align-items:center;gap:5px;">
-                                <input type="checkbox" checked disabled style="margin:0;">
-                                <span style="font-size:13px;color:#999;">By Parity (Global - Always On)</span>
+                        <div style="display:flex;flex-direction:column;gap:10px;padding:10px;background:#f5f5f5;border-radius:4px;">
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                                <input type="checkbox" ${STATE.settings.divisionSettings?.byParity !== false ? 'checked' : ''} 
+                                       onchange="updateGlobalDivisionSetting('byParity', this.checked)"
+                                       style="margin:0;">
+                                <span style="font-size:14px;">By Parity</span>
                             </label>
-                            <label style="display:flex;align-items:center;gap:5px;">
-                                <input type="checkbox" checked disabled style="margin:0;">
-                                <span style="font-size:13px;color:#999;">By Orientation (Global - Always On)</span>
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                                <input type="checkbox" ${STATE.settings.divisionSettings?.byOrientation !== false ? 'checked' : ''} 
+                                       onchange="updateGlobalDivisionSetting('byOrientation', this.checked)"
+                                       style="margin:0;">
+                                <span style="font-size:14px;">By Orientation</span>
                             </label>
-                            <p style="font-size:12px;color:#666;margin:8px 0 0 0;font-style:italic;">Note: Per-card division settings can be configured in each card's settings modal</p>
+                            <p style="font-size:12px;color:#666;margin:8px 0 0 0;font-style:italic;">
+                                Turning off a division will merge cases across all cards while preserving their original classification for later restoration.
+                            </p>
                         </div>
                     </div>
                     <div class="settings-group">
@@ -201,6 +207,10 @@ function openSettingsModal(context = 'sidebar') {
     
     function renderTrainingSettings() {
         if (!window.trainingSettings) window.trainingSettings = loadTrainingSettings();
+        
+        const parityEnabled = STATE.settings.divisionSettings?.byParity !== false;
+        const orientationEnabled = STATE.settings.divisionSettings?.byOrientation !== false;
+        
         return `
             <div class="settings-group">
                 <label class="settings-label">Scramble Text Size</label>
@@ -229,17 +239,17 @@ function openSettingsModal(context = 'sidebar') {
                                style="margin:0;">
                         <span style="font-size:13px;">Show Case Name</span>
                     </label>
-                    <label style="display:flex;align-items:center;gap:5px;${getParityVisibility() ? '' : 'opacity:0.5;'}">
+                    <label style="display:flex;align-items:center;gap:5px;${parityEnabled ? '' : 'opacity:0.5;'}">
                         <input type="checkbox" ${window.trainingSettings.showParity ? 'checked' : ''} 
                                onchange="updateTrainingDisplayOption('showParity', this.checked)"
-                               style="margin:0;" ${getParityVisibility() ? '' : 'disabled'}>
-                        <span style="font-size:13px;">Show Parity ${getParityVisibility() ? '' : '(N/A - All cards have parity off)'}</span>
+                               style="margin:0;" ${parityEnabled ? '' : 'disabled'}>
+                        <span style="font-size:13px;">Show Parity ${parityEnabled ? '' : '(N/A - Parity division off)'}</span>
                     </label>
-                    <label style="display:flex;align-items:center;gap:5px;${getOrientationVisibility() ? '' : 'opacity:0.5;'}">
+                    <label style="display:flex;align-items:center;gap:5px;${orientationEnabled ? '' : 'opacity:0.5;'}">
                         <input type="checkbox" ${window.trainingSettings.showOrientation ? 'checked' : ''} 
                                onchange="updateTrainingDisplayOption('showOrientation', this.checked)"
-                               style="margin:0;" ${getOrientationVisibility() ? '' : 'disabled'}>
-                        <span style="font-size:13px;">Show Orientation ${getOrientationVisibility() ? '' : '(N/A - All cards have orientation off)'}</span>
+                               style="margin:0;" ${orientationEnabled ? '' : 'disabled'}>
+                        <span style="font-size:13px;">Show Orientation ${orientationEnabled ? '' : '(N/A - Orientation division off)'}</span>
                     </label>
                 </div>
             </div>
@@ -272,6 +282,9 @@ function openSettingsModal(context = 'sidebar') {
     
     function renderMemoSettings() {
         if (!window.memoTrainingSettings) loadMemoTrainingSettings();
+        
+        const parityEnabled = STATE.settings.divisionSettings?.byParity !== false;
+        const orientationEnabled = STATE.settings.divisionSettings?.byOrientation !== false;
         
         const colorScheme = {
             topColor: '#000000',
@@ -380,6 +393,11 @@ function openSettingsModal(context = 'sidebar') {
         // Initialize memo order selector if on memo tab
         if (activeTab === 'memo') {
             setTimeout(() => initializeMemoOrderSelector(), 100);
+        }
+        
+        // Reload training settings to get fresh values
+        if (activeTab === 'training') {
+            window.trainingSettings = loadTrainingSettings();
         }
     }
     
@@ -1086,4 +1104,27 @@ function loadMemoTrainingSettings() {
             console.error('Error loading memo training settings:', e);
         }
     }
+}
+
+function updateGlobalDivisionSetting(setting, value) {
+    if (!STATE.settings.divisionSettings) {
+        STATE.settings.divisionSettings = { byParity: true, byOrientation: true };
+    }
+    STATE.settings.divisionSettings[setting] = value;
+    
+    // Reset all cards' view states to defaults when toggling
+    STATE.cards.forEach(card => {
+        if (!value) {
+            if (setting === 'byParity') {
+                card.viewState.parity = 'odd';
+            } else if (setting === 'byOrientation') {
+                card.viewState.orientation = 'original';
+            }
+        }
+    });
+    
+    saveState();
+    
+    // Live update: Re-render any open card modal
+    liveUpdateCaseModal();
 }

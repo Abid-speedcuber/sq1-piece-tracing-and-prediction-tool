@@ -1,9 +1,6 @@
 function openCardModal(cardIdx) {
     const card = STATE.cards[cardIdx];
     if (!card.viewState) card.viewState = { parity: 'odd', orientation: 'original' };
-    
-    // Get division settings for this card
-    const divisionSettings = card.divisionSettings || { byParity: true, byOrientation: true };
 
     // Reset session overrides for all cases when modal opens
     if (card.cases) {
@@ -27,7 +24,7 @@ function openCardModal(cardIdx) {
     </button>` : ''}
 </div>
 <div style="display:flex;gap:10px;">
-    <button class="icon-btn" onclick="openCardSettingsModal(${cardIdx})" title="Settings" style="width:32px;height:32px;background:#555;">
+    <button class="icon-btn" onclick="openSettingsModal('card')" title="Settings" style="width:32px;height:32px;background:#555;">
         <img src="res/settings.svg" style="width:16px;height:16px;">
     </button>
     <button class="close-btn" onclick="this.closest('.modal').remove()" style="color:#fff;">×</button>
@@ -35,7 +32,7 @@ function openCardModal(cardIdx) {
             </div>
             <div class="modal-body" style="padding:20px;width:100%;box-sizing:border-box;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;">
                 <div style="display:flex;gap:40px;margin-bottom:20px;padding:10px 0;align-items:center;">
-                    ${(card.divisionSettings?.byParity !== false) ? `<div style="display:flex;align-items:center;gap:15px;">
+                    ${(STATE.settings.divisionSettings?.byParity !== false) ? `<div style="display:flex;align-items:center;gap:15px;">
                         <label style="font-weight:600;">Parity:</label>
                         <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
                             <input type="radio" name="parity-${cardIdx}" value="odd" ${card.viewState.parity === 'odd' ? 'checked' : ''} onchange="updateCardView(${cardIdx}, 'parity', 'odd')">
@@ -46,7 +43,7 @@ function openCardModal(cardIdx) {
                             <span>Even</span>
                         </label>
                     </div>` : ''}
-                    ${(card.divisionSettings?.byOrientation !== false) ? `<div style="display:flex;align-items:center;gap:15px;">
+                    ${(STATE.settings.divisionSettings?.byOrientation !== false) ? `<div style="display:flex;align-items:center;gap:15px;">
                         <label style="font-weight:600;">Orientation:</label>
                         <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
                             <input type="radio" name="orientation-${cardIdx}" value="original" ${card.viewState.orientation === 'original' ? 'checked' : ''} onchange="updateCardView(${cardIdx}, 'orientation', 'original')">
@@ -83,7 +80,6 @@ function renderCases(cardIdx) {
     const card = STATE.cards[cardIdx];
     if (!card.cases) card.cases = [];
     if (!card.viewState) card.viewState = { parity: 'odd', orientation: 'original' };
-    if (!card.divisionSettings) card.divisionSettings = { byParity: true, byOrientation: true };
 
     const type = card.viewState.parity === 'odd' ? 'parity' : 'nonparity';
     const variant = card.viewState.orientation;
@@ -93,15 +89,17 @@ function renderCases(cardIdx) {
 
     container.innerHTML = '';
     
-    // Filter cases based on division settings
+    // Filter cases based on global division settings
     let cases;
-    if (!card.divisionSettings.byParity && !card.divisionSettings.byOrientation) {
+    const divisionSettings = STATE.settings.divisionSettings || { byParity: true, byOrientation: true };
+    
+    if (!divisionSettings.byParity && !divisionSettings.byOrientation) {
         // Show all cases
         cases = card.cases;
-    } else if (!card.divisionSettings.byParity && card.divisionSettings.byOrientation) {
+    } else if (!divisionSettings.byParity && divisionSettings.byOrientation) {
         // Show cases matching orientation only (merge parity)
         cases = card.cases.filter(c => c.variant === variant);
-    } else if (card.divisionSettings.byParity && !card.divisionSettings.byOrientation) {
+    } else if (divisionSettings.byParity && !divisionSettings.byOrientation) {
         // Show cases matching parity only (merge orientation)
         cases = card.cases.filter(c => c.type === type);
     } else {
@@ -284,11 +282,12 @@ function addCase(cardIdx) {
     const card = STATE.cards[cardIdx];
     if (!card.cases) card.cases = [];
     if (!card.viewState) card.viewState = { parity: 'odd', orientation: 'original' };
-    if (!card.divisionSettings) card.divisionSettings = { byParity: true, byOrientation: true };
 
+    const divisionSettings = STATE.settings.divisionSettings || { byParity: true, byOrientation: true };
+    
     // Always save to default compartment (odd parity, original orientation)
-    const type = card.divisionSettings.byParity ? (card.viewState.parity === 'odd' ? 'parity' : 'nonparity') : 'parity';
-    const variant = card.divisionSettings.byOrientation ? card.viewState.orientation : 'original';
+    const type = divisionSettings.byParity ? (card.viewState.parity === 'odd' ? 'parity' : 'nonparity') : 'parity';
+    const variant = divisionSettings.byOrientation ? card.viewState.orientation : 'original';
 
     const newCase = {
         type,
@@ -1163,70 +1162,4 @@ function updateCaseInputType(cardIdx, caseIdx, type) {
     caseItem.inputType = type;
     saveState();
     renderCases(cardIdx);
-}
-
-function updateCardDivisionSettings(cardIdx, setting, value) {
-    const card = STATE.cards[cardIdx];
-    if (!card.divisionSettings) card.divisionSettings = { byParity: true, byOrientation: true };
-    card.divisionSettings[setting] = value;
-    
-    // Reset view state to defaults when toggling
-    if (!value) {
-        if (setting === 'byParity') {
-            card.viewState.parity = 'odd';
-        } else if (setting === 'byOrientation') {
-            card.viewState.orientation = 'original';
-        }
-    }
-    
-    saveState();
-    
-    // Re-render the card modal if it's open
-    renderCases(cardIdx);
-}
-
-function openCardSettingsModal(cardIdx) {
-    const card = STATE.cards[cardIdx];
-    if (!card.divisionSettings) card.divisionSettings = { byParity: true, byOrientation: true };
-    
-    const modal = document.createElement('div');
-    modal.className = 'modal';
-    modal.style.display = 'block';
-    
-    modal.innerHTML = `
-        <div class="modal-content" style="max-width:450px;">
-            <div class="modal-header">
-                <h3>${card.title || 'Card'} Settings</h3>
-                <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
-            </div>
-            <div class="modal-body">
-                <div class="settings-group">
-                    <label class="settings-label" style="font-weight:600;font-size:15px;margin-bottom:10px;">CS Case Division</label>
-                    <div style="display:flex;flex-direction:column;gap:10px;padding:10px;background:#f5f5f5;border-radius:4px;">
-                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-                            <input type="checkbox" ${card.divisionSettings.byParity ? 'checked' : ''} 
-                                   onchange="updateCardDivisionSettings(${cardIdx}, 'byParity', this.checked)"
-                                   style="margin:0;">
-                            <span style="font-size:14px;">By Parity</span>
-                        </label>
-                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-                            <input type="checkbox" ${card.divisionSettings.byOrientation ? 'checked' : ''} 
-                                   onchange="updateCardDivisionSettings(${cardIdx}, 'byOrientation', this.checked)"
-                                   style="margin:0;">
-                            <span style="font-size:14px;">By Orientation</span>
-                        </label>
-                        <p style="font-size:12px;color:#666;margin:8px 0 0 0;font-style:italic;">
-                            Turning off a division will merge cases while preserving their original classification for later restoration.
-                        </p>
-                    </div>
-                </div>
-                <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;">
-                    <button class="btn" onclick="openSettingsModal('card'); this.closest('.modal').remove()">More Settings</button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
 }

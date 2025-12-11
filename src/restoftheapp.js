@@ -22,6 +22,10 @@ const STATE = {
             { hex: 'e', pieceCode: 'DB', color: '#FF4747', label: '6' },
             { hex: 'f', pieceCode: 'DLB', color: '#FF6969', label: '7' }
         ],
+        divisionSettings: {
+            byParity: true,
+            byOrientation: true
+        },
         enableLabels: true,
         personalization: {
             hideActualStateButton: false,
