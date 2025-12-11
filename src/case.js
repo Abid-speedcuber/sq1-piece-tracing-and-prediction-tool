@@ -122,6 +122,9 @@ function renderCases(cardIdx) {
             columns = 1;
         }
         
+        // Limit columns to number of available cases
+        columns = Math.min(columns, cases.length);
+        
         if (columns > 1) {
             container.style.display = 'grid';
             container.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;

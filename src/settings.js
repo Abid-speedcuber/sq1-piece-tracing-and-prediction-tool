@@ -258,6 +258,49 @@ function openSettingsModal(context = 'sidebar') {
     
     function renderMemoSettings() {
         if (!window.memoTrainingSettings) loadMemoTrainingSettings();
+        
+        const colorScheme = {
+            topColor: '#000000',
+            bottomColor: '#FFFFFF',
+            frontColor: '#CC0000',
+            rightColor: '#00AA00',
+            backColor: '#FF8C00',
+            leftColor: '#0066CC',
+            dividerColor: '#7a0000',
+            circleColor: 'transparent'
+        };
+        
+        // Build piece labels map
+        const pieceLabels = {};
+        STATE.settings.colorMappings.forEach(mapping => {
+            if (mapping.label) {
+                pieceLabels[mapping.hex] = mapping.label;
+            }
+        });
+        
+        // (0,0) hex code
+        const zeroZeroHex = '011233455677|998bbaddcffe';
+        
+        // Generate (0,0) base image (fully colored, randomized - decoy)
+        const baseImage = window.Square1VisualizerLibraryWithSillyNames.visualizeFromHexCodePlease(
+            zeroZeroHex,
+            200, 
+            colorScheme, 
+            5, 
+            false,
+            null
+        );
+        
+        // Generate hitbox overlay (invisible polygons with labels)
+        const hitboxOverlay = window.Square1VisualizerLibraryWithSillyNames.visualizeFromHexCodePlease(
+            zeroZeroHex,
+            200, 
+            colorScheme, 
+            5, 
+            true, // Show labels
+            pieceLabels
+        );
+        
         return `
             <div class="settings-group">
                 <label class="settings-label">Image Size</label>
@@ -286,10 +329,27 @@ function openSettingsModal(context = 'sidebar') {
             </div>
             <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;margin-top:15px;">
                 <label class="settings-label">Piece Order</label>
-                <div style="padding:10px;background:#f0f0f0;border-radius:4px;font-size:13px;margin-bottom:10px;font-family:monospace;">
+                <div style="padding:10px;background:#f0f0f0;border-radius:4px;font-size:13px;margin-bottom:10px;font-family:monospace;" id="memoOrderCurrentDisplay">
                     Current Order: ${window.memoTrainingSettings.pieceOrder.map(hex => translateHexToPieceCode(hex)).join(' → ')}
                 </div>
-                <button class="btn" onclick="openMemoOrderConfigModal()">Configure Piece Order</button>
+                <div style="margin-bottom:15px;">
+                    <div style="font-weight:600;margin-bottom:8px;">Click pieces in your desired order:</div>
+                    <div style="display:flex;justify-content:center;margin-bottom:10px;">
+                        <div id="memoOrderSelector" style="position:relative;display:inline-block;">
+                            ${baseImage}
+                            <div id="memoOrderOverlay" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">
+                                ${hitboxOverlay}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="memoOrderPreview" style="padding:10px;background:#f0f0f0;border-radius:4px;font-size:13px;min-height:40px;margin-bottom:10px;">
+                        Click pieces to set order...
+                    </div>
+                    <div style="display:flex;gap:10px;">
+                        <button class="btn" onclick="window.resetMemoOrderSelection()">Reset Selection</button>
+                        <button class="btn btn-primary" onclick="window.applyMemoOrderSelection()">Apply Order</button>
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -302,6 +362,11 @@ function openSettingsModal(context = 'sidebar') {
         
         // Update button styles to reflect active state
         updateTabButtons();
+        
+        // Initialize memo order selector if on memo tab
+        if (activeTab === 'memo') {
+            setTimeout(() => initializeMemoOrderSelector(), 100);
+        }
     }
     
     function updateTabButtons() {
@@ -769,6 +834,247 @@ function liveUpdateCaseModal() {
         const cardIdx = parseInt(containerId.split('-')[2]);
         if (!isNaN(cardIdx)) {
             renderCases(cardIdx);
+        }
+    }
+}
+
+function initializeMemoOrderSelector() {
+    window.memoOrderClickSequence = [];
+    
+    const overlay = document.getElementById('memoOrderOverlay');
+    if (!overlay) return;
+    
+    const allPolygons = overlay.querySelectorAll('polygon');
+    const allTexts = overlay.querySelectorAll('text');
+    
+    // Hide all labels initially
+    allTexts.forEach(textEl => {
+        textEl.style.opacity = '0';
+        textEl.style.pointerEvents = 'none';
+    });
+    
+    // Make each polygon a clickable hitbox
+    allPolygons.forEach(polygon => {
+        polygon.style.fill = 'transparent';
+        polygon.style.stroke = 'transparent';
+        polygon.style.pointerEvents = 'auto';
+        polygon.style.cursor = 'pointer';
+        polygon.style.webkitTapHighlightColor = 'transparent';
+        polygon.style.userSelect = 'none';
+        
+        const parentSvg = polygon.closest('svg');
+        const textsInSvg = parentSvg ? parentSvg.querySelectorAll('text') : [];
+        
+        const points = polygon.getAttribute('points').split(' ');
+        let sumX = 0, sumY = 0, count = 0;
+        points.forEach(point => {
+            const [x, y] = point.split(',').map(Number);
+            sumX += x;
+            sumY += y;
+            count++;
+        });
+        const centerX = sumX / count;
+        const centerY = sumY / count;
+        
+        let closestText = null;
+        let minDistance = Infinity;
+        
+        textsInSvg.forEach(textEl => {
+            const x = parseFloat(textEl.getAttribute('x'));
+            const y = parseFloat(textEl.getAttribute('y'));
+            const distance = Math.sqrt(Math.pow(centerX - x, 2) + Math.pow(centerY - y, 2));
+            
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestText = textEl;
+            }
+        });
+        
+        if (closestText && minDistance < 100) {
+            const allSvgs = overlay.querySelectorAll('svg');
+            const isBottomLayer = parentSvg === allSvgs[1];
+            const textsInLayer = parentSvg.querySelectorAll('text');
+            const textIndex = Array.from(textsInLayer).indexOf(closestText);
+            
+            const zeroZeroHex = '011233455677|998bbaddcffe';
+            let pieceHex = null;
+            
+            let currentPieceIndex = 0;
+            let hexIndex = isBottomLayer ? 13 : 0;
+            const endIndex = isBottomLayer ? 25 : 12;
+            
+            while (hexIndex < endIndex && currentPieceIndex <= textIndex) {
+                const char = zeroZeroHex[hexIndex].toLowerCase();
+                const isCorner = ['1', '3', '5', '7', '9', 'b', 'd', 'f'].includes(char);
+                
+                if (currentPieceIndex === textIndex) {
+                    if (isCorner && hexIndex + 1 < endIndex) {
+                        pieceHex = char + char;
+                    } else {
+                        pieceHex = char;
+                    }
+                    break;
+                }
+                
+                currentPieceIndex++;
+                if (isCorner) {
+                    hexIndex += 2;
+                } else {
+                    hexIndex += 1;
+                }
+                
+                if (hexIndex === 12) hexIndex = 13;
+            }
+            
+            let pieceCode = null;
+            for (const mapping of STATE.settings.colorMappings) {
+                if (mapping.hex.toLowerCase() === pieceHex.toLowerCase()) {
+                    pieceCode = mapping.pieceCode;
+                    break;
+                }
+            }
+            
+            if (pieceHex) {
+                polygon.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    handleMemoOrderClick(pieceCode, closestText, polygon, pieceHex);
+                });
+                
+                polygon.addEventListener('mouseenter', () => {
+                    if (!polygon.dataset.clicked) {
+                        polygon.style.cursor = 'pointer';
+                    } else {
+                        polygon.style.cursor = 'default';
+                    }
+                });
+            }
+        }
+    });
+}
+
+function handleMemoOrderClick(pieceCode, textEl, polygon, hexValue) {
+    if (polygon.dataset.clicked === 'true') {
+        return;
+    }
+    
+    polygon.dataset.clicked = 'true';
+    polygon.dataset.hexValue = hexValue;
+    
+    window.memoOrderClickSequence.push(hexValue.toLowerCase());
+    
+    textEl.style.opacity = '1';
+    textEl.style.fill = 'white';
+    textEl.style.stroke = 'black';
+    textEl.style.strokeWidth = '3';
+    textEl.setAttribute('paint-order', 'stroke');
+    
+    const preview = document.getElementById('memoOrderPreview');
+    if (preview) {
+        preview.textContent = `Order: ${window.memoOrderClickSequence.map(hex => translateHexToPieceCode(hex)).join(' → ')}`;
+    }
+}
+
+window.resetMemoOrderSelection = function() {
+    window.memoOrderClickSequence = [];
+    
+    const overlay = document.getElementById('memoOrderOverlay');
+    if (overlay) {
+        const textElements = overlay.querySelectorAll('text');
+        textElements.forEach(textEl => {
+            textEl.style.opacity = '0';
+        });
+        const polygons = overlay.querySelectorAll('polygon');
+        polygons.forEach(poly => {
+            delete poly.dataset.clicked;
+            delete poly.dataset.hexValue;
+        });
+    }
+    
+    const preview = document.getElementById('memoOrderPreview');
+    if (preview) {
+        preview.textContent = 'Click pieces to set order...';
+    }
+};
+
+window.applyMemoOrderSelection = function() {
+    if (!window.memoOrderClickSequence || window.memoOrderClickSequence.length === 0) {
+        showConfirmModal('Error', 'Please select at least one piece', () => {});
+        return;
+    }
+    
+    if (window.memoOrderClickSequence.length !== 16) {
+        showConfirmModal('Warning', `You've only selected ${window.memoOrderClickSequence.length} pieces. Continue anyway?`, () => {
+            if (!window.memoTrainingSettings) {
+                loadMemoTrainingSettings();
+            }
+            window.memoTrainingSettings.pieceOrder = [...window.memoOrderClickSequence];
+            saveMemoTrainingSettings();
+            
+            // Update current display
+            const display = document.getElementById('memoOrderCurrentDisplay');
+            if (display) {
+                display.textContent = `Current Order: ${window.memoTrainingSettings.pieceOrder.map(hex => translateHexToPieceCode(hex)).join(' → ')}`;
+            }
+            
+            showConfirmModal('Success', 'Piece order updated successfully!', () => {});
+        });
+        return;
+    }
+    
+    if (!window.memoTrainingSettings) {
+        loadMemoTrainingSettings();
+    }
+    window.memoTrainingSettings.pieceOrder = [...window.memoOrderClickSequence];
+    saveMemoTrainingSettings();
+    
+    // Update current display
+    const display = document.getElementById('memoOrderCurrentDisplay');
+    if (display) {
+        display.textContent = `Current Order: ${window.memoTrainingSettings.pieceOrder.map(hex => translateHexToPieceCode(hex)).join(' → ')}`;
+    }
+    
+    showConfirmModal('Success', 'Piece order updated successfully!', () => {});
+};
+
+function translateHexToPieceCode(hex) {
+    const hexMap = {
+        '11': 'UBL',
+        '0': 'UB',
+        '77': 'URB',
+        '6': 'UR',
+        '55': 'UFR',
+        '4': 'UF',
+        '33': 'ULF',
+        '2': 'UL',
+        'dd': 'DLF',
+        'a': 'DF',
+        'bb': 'DFR',
+        '8': 'DR',
+        '99': 'DRB',
+        'e': 'DB',
+        'ff': 'DLB',
+        'c': 'DL'
+    };
+    return hexMap[hex.toLowerCase()] || hex;
+}
+
+function saveMemoTrainingSettings() {
+    if (window.memoTrainingSettings) {
+        localStorage.setItem('sq1MemoTrainingSettings', JSON.stringify(window.memoTrainingSettings));
+    }
+}
+
+function loadMemoTrainingSettings() {
+    const saved = localStorage.getItem('sq1MemoTrainingSettings');
+    if (saved) {
+        try {
+            const parsed = JSON.parse(saved);
+            if (!window.memoTrainingSettings) {
+                window.memoTrainingSettings = {};
+            }
+            window.memoTrainingSettings = { ...window.memoTrainingSettings, ...parsed };
+        } catch (e) {
+            console.error('Error loading memo training settings:', e);
         }
     }
 }
