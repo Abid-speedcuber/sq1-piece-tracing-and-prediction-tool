@@ -95,6 +95,52 @@ function renderCases(cardIdx) {
         return;
     }
 
+    const isMobileView = STATE.settings.personalization.enableMobileView;
+    
+    // Calculate columns based on screen width and image size
+    const updateLayout = () => {
+        const screenWidth = window.innerWidth;
+        const imageSize = STATE.settings.imageSize;
+        
+        // Calculate total image width (two SVGs side by side with ringDistance gap)
+        const unit10vh = imageSize * 0.4;
+        const radiusOuter = unit10vh * 0.7;
+        const ringRadius = radiusOuter + (unit10vh * 0.4);
+        const ringDistance = 5;
+        const centerToCenterDistance = ringRadius * (2 + ringDistance / 100);
+        const totalImageWidth = Math.max(400, centerToCenterDistance + imageSize);
+        
+        let columns = 1;
+        
+        if (isMobileView) {
+            if (screenWidth < 800) {
+                columns = 1;
+            } else {
+                columns = Math.round(screenWidth / totalImageWidth);
+            }
+        } else {
+            columns = 1;
+        }
+        
+        if (columns > 1) {
+            container.style.display = 'grid';
+            container.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+            container.style.gap = '15px';
+        } else {
+            container.style.display = 'block';
+            container.style.gridTemplateColumns = '';
+            container.style.gap = '';
+        }
+    };
+    
+    // Initial layout
+    updateLayout();
+    
+    // Update layout on window resize
+    const resizeHandler = () => updateLayout();
+    window.removeEventListener('resize', resizeHandler);
+    window.addEventListener('resize', resizeHandler);
+
     cases.forEach((caseItem, caseIdx) => {
         const actualIdx = card.cases.indexOf(caseItem);
         if (!caseItem.overrideTracking) caseItem.overrideTracking = false;
@@ -110,7 +156,6 @@ function renderCases(cardIdx) {
         const normalizedSolution = window.ScrambleNormalizer.normalizeScramble(caseItem.solution || '');
         const setupMoves = pleaseInvertThisScrambleForSolutionVisualization(normalizedSolution);
 
-        const isMobileView = STATE.settings.personalization.enableMobileView;
         const swapAlgs = STATE.settings.personalization.swapAlgorithmDisplay;
         const hideActualState = STATE.settings.personalization.hideActualStateButton;
         const hideChangePieces = STATE.settings.personalization.hideChangeTrackedPiecesButton;
@@ -130,27 +175,10 @@ function renderCases(cardIdx) {
         `;
 
         if (isMobileView) {
-            // Check screen width for multi-column layout
-            const screenWidth = window.innerWidth;
-            let columns = 1;
-            if (screenWidth >= 2400) columns = 3;
-            else if (screenWidth >= 1200) columns = 2;
-            
-            if (columns > 1 && container.style.display !== 'grid') {
-                container.style.display = 'grid';
-                container.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
-                container.style.gap = '15px';
-            } else if (columns === 1) {
-                container.style.display = 'block';
-            }
-            
             caseCard.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <strong style="font-size:16px;">${caseItem.customName || (card.title || 'Case') + (caseIdx + 1)}</strong>
-        <button class="icon-btn" style="width:32px;height:32px;margin-right:8px;" onclick="openEditCaseNameModal(${cardIdx}, ${actualIdx}, event)" title="Edit Name">
-                    <img src="res/edit.svg" style="width:16px;height:16px;">
-                </button>
-                <button class="icon-btn" style="width:32px;height:32px;" onclick="toggleCaseEditMode(${cardIdx}, ${actualIdx})" title="Edit Case">
+        <button class="icon-btn" style="width:32px;height:32px;" onclick="toggleCaseEditMode(${cardIdx}, ${actualIdx})" title="Edit Case">
             <img src="res/edit.svg" style="width:16px;height:16px;">
         </button>
     </div>
@@ -188,10 +216,7 @@ function renderCases(cardIdx) {
             caseCard.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <strong style="font-size:16px;">${caseItem.customName || (card.title || 'Case') + (caseIdx + 1)}</strong>
-        <button class="icon-btn" style="width:32px;height:32px;margin-right:8px;" onclick="openEditCaseNameModal(${cardIdx}, ${actualIdx}, event)" title="Edit Name">
-                    <img src="res/edit.svg" style="width:16px;height:16px;">
-                </button>
-                <button class="icon-btn" style="width:32px;height:32px;" onclick="toggleCaseEditMode(${cardIdx}, ${actualIdx})" title="Edit Case">
+        <button class="icon-btn" style="width:32px;height:32px;" onclick="toggleCaseEditMode(${cardIdx}, ${actualIdx})" title="Edit Case">
             <img src="res/edit.svg" style="width:16px;height:16px;">
         </button>
     </div>
@@ -563,11 +588,16 @@ function openCaseEditModal(cardIdx, caseIdx) {
         const currentOverride = caseItem.overrideTracking || false;
         const currentCustomPieces = caseItem.customTrackedPieces || [];
 
+        const isMobileEditView = STATE.settings.personalization.enableMobileView;
+        
         return `
                     <div class="modal-content" style="max-width:800px;">
                         <div class="modal-header" style="background:#333;color:#fff;">
 <div style="display:flex;align-items:center;gap:10px;">
-    <h3 style="color:#fff;margin:0;">Edit Angle ${caseIdx + 1}</h3>
+    <h3 style="color:#fff;margin:0;">${caseItem.customName || (STATE.cards[cardIdx].title || 'Case') + ' ' + (caseIdx + 1)}</h3>
+    <button class="icon-btn" onclick="openEditCaseNameModal(${cardIdx}, ${caseIdx}, event)" title="Edit Name" style="width:24px;height:24px;background:#555;">
+        <img src="res/edit.svg" style="width:12px;height:12px;">
+    </button>
     ${!STATE.settings.personalization.hideInstructions ? `<button class="icon-btn" onclick="openEditInstructionModal()" title="Help" style="width:24px;height:24px;background:#555;">
         <img src="res/white-instruction.svg" style="width:12px;height:12px;">
     </button>` : ''}
@@ -575,8 +605,8 @@ function openCaseEditModal(cardIdx, caseIdx) {
 <button class="close-btn" onclick="window.cancelCaseEditModal()" style="color:#fff;">×</button>
                         </div>
                         <div class="modal-body" style="padding:20px;">
-                            <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;margin-bottom:15px;">
-                                <div>
+                            <div style="display:${isMobileEditView ? 'flex' : 'grid'};${isMobileEditView ? 'flex-direction:column;' : 'grid-template-columns:auto 1fr;'}gap:20px;margin-bottom:15px;">
+                                <div style="${isMobileEditView ? 'display:flex;justify-content:center;' : ''}">
                                     <div id="edit-case-image-${cardIdx}-${caseIdx}" style="display:flex;align-items:center;justify-content:center;">
                                         ${caseItem.imageHtml || '<span style="color:#999;font-size:12px;">Generating...</span>'}
                                     </div>
