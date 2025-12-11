@@ -289,154 +289,10 @@ function showMemoConfirm(message, onConfirm, title = 'Confirm') {
 }
 
 function openCaseSelectionModal() {
-    const modal = document.createElement('div');
-    modal.className = 'modal';
-    modal.style.display = 'block';
-
-    // Collect all cases
-    const allCases = [];
-    STATE.cards.forEach((card, cardIdx) => {
-        if (!card.cases) return;
-        card.cases.forEach((caseItem, caseIdx) => {
-            // Skip cases with no algorithm
-            if (!caseItem.solution || caseItem.solution.trim() === '' || caseItem.solution.toLowerCase() === 'no algorithm') {
-                return;
-            }
-            allCases.push({
-                cardIdx,
-                caseIdx,
-                cardTitle: card.title || 'Untitled',
-                parity: caseItem.type === 'parity' ? 'Odd' : 'Even',
-                orientation: caseItem.variant === 'original' ? 'Original' : 'Mirror',
-                algorithm: caseItem.solution || 'No algorithm',
-                caseName: caseItem.customName || (card.title || 'Case') + (caseIdx + 1),
-                selected: isCaseSelected(cardIdx, caseIdx)
-            });
-        });
-    });
-
-    function renderCaseTable(searchQuery = '') {
-        const filteredCases = searchQuery 
-            ? allCases.filter(c => c.cardTitle.toLowerCase().includes(searchQuery.toLowerCase()))
-            : allCases;
-            
-        let tableHtml = '';
-        filteredCases.forEach((caseData, idx) => {
-            tableHtml += `
-                <tr>
-                    <td style="text-align:center;">
-                        <input type="checkbox" ${caseData.selected ? 'checked' : ''} 
-                               onchange="toggleCaseSelection(${caseData.cardIdx}, ${caseData.caseIdx}, this.checked)">
-                    </td>
-                    <td>${caseData.cardTitle}</td>
-                    <td>${caseData.parity}</td>
-                    <td>${caseData.orientation}</td>
-                    <td>${caseData.caseName}</td>
-                    <td style="font-family:monospace;font-size:11px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${caseData.algorithm}</td>
-                </tr>
-            `;
-        });
-        return tableHtml || '<tr><td colspan="6" style="text-align:center;color:#999;padding:20px;">No cases found</td></tr>';
-    }
-
-    modal.innerHTML = `
-        <div class="modal-content" style="max-width:90vw;max-height:90vh;">
-            <div class="modal-header">
-                <h3>Select Cases for Training</h3>
-                <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
-            </div>
-            <div class="modal-body" style="overflow:auto;">
-                <div style="margin-bottom:15px;">
-                    <input type="text" id="memoCaseSearchInput" class="settings-input" placeholder="Search by card name..." 
-                           style="width:100%;padding:8px;margin-bottom:10px;">
-                </div>
-                <div style="margin-bottom:15px;display:flex;gap:10px;">
-                    <button class="btn" onclick="selectAllCases()">Select All</button>
-                    <button class="btn" onclick="deselectAllCases()">Deselect All</button>
-                </div>
-                <div style="overflow-x:auto;">
-                    <table class="variable-table" style="min-width:800px;">
-                        <thead>
-                            <tr>
-                                <th style="width:60px;text-align:center;">Select</th>
-                                <th style="width:150px;">Card Name</th>
-                                <th style="width:80px;">Parity</th>
-                                <th style="width:100px;">Orientation</th>
-                                <th style="width:80px;">Angle</th>
-                                <th>Algorithm</th>
-                            </tr>
-                        </thead>
-                        <tbody id="caseSelectionTableBody">
-                            ${renderCaseTable()}
-                        </tbody>
-                    </table>
-                </div>
-                <div style="margin-top:15px;">
-                    <button class="btn btn-primary" onclick="saveCaseSelection()">Done</button>
-                </div>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    // Add search functionality
-    document.getElementById('memoCaseSearchInput').addEventListener('input', (e) => {
-        const searchQuery = e.target.value.toLowerCase();
-        document.getElementById('caseSelectionTableBody').innerHTML = renderCaseTable(searchQuery);
-    });
-
-    window.toggleCaseSelection = function(cardIdx, caseIdx, selected) {
-        const key = `${cardIdx}-${caseIdx}`;
-        if (selected) {
-            if (!memoSelectedCases.includes(key)) {
-                memoSelectedCases.push(key);
-            }
-        } else {
-            const idx = memoSelectedCases.indexOf(key);
-            if (idx > -1) {
-                memoSelectedCases.splice(idx, 1);
-            }
-        }
-        saveMemoSelectedCases();
-    };
-
-    window.selectAllCases = function() {
-        memoSelectedCases = [];
-        allCases.forEach(caseData => {
-            const key = `${caseData.cardIdx}-${caseData.caseIdx}`;
-            if (!memoSelectedCases.includes(key)) {
-                memoSelectedCases.push(key);
-            }
-            caseData.selected = true;
-        });
-        saveMemoSelectedCases();
-        const searchQuery = document.getElementById('memoCaseSearchInput').value.toLowerCase();
-        document.getElementById('caseSelectionTableBody').innerHTML = renderCaseTable(searchQuery);
-    };
-
-    window.deselectAllCases = function() {
-        memoSelectedCases = [];
-        allCases.forEach(caseData => {
-            caseData.selected = false;
-        });
-        saveMemoSelectedCases();
-        const searchQuery = document.getElementById('memoCaseSearchInput').value.toLowerCase();
-        document.getElementById('caseSelectionTableBody').innerHTML = renderCaseTable(searchQuery);
-    };
-
-    window.saveCaseSelection = function() {
-        modal.remove();
+    window.CaseSelector.openModal('memo', (selected) => {
+        memoSelectedCases = selected;
         updateSelectedCasesInfo();
-        delete window.toggleCaseSelection;
-        delete window.selectAllCases;
-        delete window.deselectAllCases;
-        delete window.saveCaseSelection;
-    };
-
-    modal.onclick = (e) => {
-        if (e.target === modal) modal.remove();
-    };
+    });
 }
 
 function isCaseSelected(cardIdx, caseIdx) {
@@ -444,19 +300,11 @@ function isCaseSelected(cardIdx, caseIdx) {
 }
 
 function saveMemoSelectedCases() {
-    localStorage.setItem('sq1MemoSelectedCases', JSON.stringify(memoSelectedCases));
+    window.CaseSelector.save('memo', memoSelectedCases);
 }
 
 function loadMemoSelectedCases() {
-    const saved = localStorage.getItem('sq1MemoSelectedCases');
-    if (saved) {
-        try {
-            memoSelectedCases = JSON.parse(saved);
-        } catch (e) {
-            console.error('Error loading memo selected cases:', e);
-            memoSelectedCases = [];
-        }
-    }
+    memoSelectedCases = window.CaseSelector.load('memo');
 }
 
 function updateSelectedCasesInfo() {
@@ -715,32 +563,19 @@ function loadNextMemoCase() {
         
         const result = window.TrainingModule.generateTrainingScramble(normalized);
         
-        // Apply RBL transformation if lock orientation is off
-        let finalHex = result.randomHex;
-        let trueHex = result.originalHex; // This is for hitboxes
-        let rul = 0, rdl = 0;
-        let mirrorApplied = false;
+        // Get display and true hex using unified function
+        const hexData = window.TrainingModule.getTwoHex(
+            normalized,
+            memoTrainingSettings.lockOrientation,
+            memoTrainingSettings.allowMirror,
+            NO_MIRROR_SHAPES
+        );
         
-        if (!memoTrainingSettings.lockOrientation) {
-            const rblResult = applyRBLToHex(finalHex);
-            finalHex = rblResult.hex;
-            rul = rblResult.rul;
-            rdl = rblResult.rdl;
-            
-            // Apply same RBL to true hex for hitboxes
-            trueHex = applyRBL(trueHex, rul, rdl);
-            
-            // Check if this is a symmetric shape for mirroring
-            const shapeIndex = hexToShapeIndex(finalHex);
-            const isSymmetric = NO_MIRROR_SHAPES.has(shapeIndex);
-            
-            // Apply mirror transformation if allowed and not symmetric
-            if (memoTrainingSettings.allowMirror && !isSymmetric && Math.random() < 0.5) {
-                finalHex = applyMirrorToHex(finalHex);
-                trueHex = applyMirrorToHex(trueHex);
-                mirrorApplied = true;
-            }
-        }
+        let finalHex = hexData.displayHex;
+        let trueHex = hexData.trueHex;
+        let rul = hexData.rul;
+        let rdl = hexData.rdl;
+        let mirrorApplied = hexData.mirrorApplied;
         
         memoCurrentHex = finalHex;
         memoTrueHex = trueHex; // Store for hitboxes
@@ -1865,246 +1700,6 @@ function updateMemoLockOrientation(value) {
 function updateMemoAllowMirror(value) {
     memoTrainingSettings.allowMirror = value;
     saveMemoTrainingSettings();
-}
-
-// Helper functions from co-tracker-training.js
-function applyRBLToHex(hexScramble) {
-    try {
-        const shapeIndex = getShapeIndexFromHex(hexScramble);
-        const validRotations = getValidRBLForShape(shapeIndex);
-        const rul = validRotations.top[Math.floor(Math.random() * validRotations.top.length)];
-        const rdl = validRotations.bottom[Math.floor(Math.random() * validRotations.bottom.length)];
-        return {
-            hex: applyRBL(hexScramble, rul, rdl),
-            rul: rul,
-            rdl: rdl
-        };
-    } catch (e) {
-        console.error('Error applying RBL:', e);
-        return { hex: hexScramble, rul: 0, rdl: 0 };
-    }
-}
-
-function applyMirrorToHex(hexScramble) {
-    const parsed = parseHexScramble(hexScramble);
-    return parsed.bottom + parsed.equator + parsed.top;
-}
-
-function parseHexScramble(hexScramble) {
-    hexScramble = hexScramble.replace(/\s/g, '');
-    return {
-        top: hexScramble.slice(0, 12),
-        equator: hexScramble[12],
-        bottom: hexScramble.slice(13, 25)
-    };
-}
-
-function getShapeIndexFromHex(hexScramble) {
-    const parsed = parseHexScramble(hexScramble);
-    const fullHex = parsed.top + parsed.bottom;
-    const shapeArray = new Array(24);
-    
-    for (let i = 0; i < 24; i++) {
-        const piece = fullHex[i].toLowerCase();
-        const isCorner = ['1', '3', '5', '7', '9', 'b', 'd', 'f'].includes(piece);
-        shapeArray[i] = isCorner ? 1 : 0;
-    }
-    
-    let value = 0;
-    for (let i = 0; i < 24; i++) {
-        value |= shapeArray[23 - i] << i;
-    }
-    
-    const shapeIndex = pleaseSaveAllValidShapeIndicesHereThankYou.indexOf(value);
-    if (shapeIndex === -1) throw new Error('Invalid shape');
-    return shapeIndex;
-}
-
-function getValidRBLForShape(shapeIndex) {
-    const VALID_ROTATIONS = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
-    const shapeValue = pleaseSaveAllValidShapeIndicesHereThankYou[shapeIndex];
-    const s24 = shapeValue.toString(2).padStart(24, '0');
-    const top = s24.slice(0, 12);
-    const bottom = s24.slice(12, 24);
-    
-    const getValidRotations = (layer) => {
-        const valid = [];
-        for (const r of VALID_ROTATIONS) {
-            const rotated = rotate12(layer, r);
-            if (layerIsValid(rotated)) valid.push(r);
-        }
-        return valid;
-    };
-    
-    return {
-        top: getValidRotations(top),
-        bottom: getValidRotations(bottom)
-    };
-}
-
-function rotate12(s, rot) {
-    if (!rot) return s;
-    rot = ((rot % 12) + 12) % 12;
-    if (rot === 0) return s;
-    return s.slice(rot) + s.slice(0, rot);
-}
-
-function layerIsValid(s) {
-    if (s.length !== 12) return false;
-    
-    const countLeading = (str) => {
-        let c = 0;
-        for (let ch of str) {
-            if (ch === '1') c++; else break;
-        }
-        return c;
-    };
-    
-    const countTrailing = (str) => {
-        let c = 0;
-        for (let i = str.length - 1; i >= 0; i--) {
-            if (str[i] === '1') c++; else break;
-        }
-        return c;
-    };
-    
-    const lead = countLeading(s);
-    if (lead % 2 === 1) return false;
-    
-    const trail = countTrailing(s);
-    if (trail % 2 === 1) return false;
-    
-    if (s[5] === '1') {
-        const after = s.slice(6, 12);
-        const onesAfter = (after.match(/1/g) || []).length;
-        if (onesAfter % 2 === 1) return false;
-    }
-    
-    return true;
-}
-
-function hexToShapeIndex(hexScramble) {
-    const parsed = parseHexScramble(hexScramble);
-    const fullHex = parsed.top + parsed.bottom;
-    const shapeArray = new Array(24);
-    
-    for (let i = 0; i < 24; i++) {
-        const piece = fullHex[i].toLowerCase();
-        const isCorner = ['1', '3', '5', '7', '9', 'b', 'd', 'f'].includes(piece);
-        shapeArray[i] = isCorner ? 1 : 0;
-    }
-    
-    let value = 0;
-    for (let i = 0; i < 24; i++) {
-        value |= shapeArray[23 - i] << i;
-    }
-    
-    const shapeIndex = pleaseSaveAllValidShapeIndicesHereThankYou.indexOf(value);
-    if (shapeIndex === -1) throw new Error('Invalid shape');
-    return shapeIndex;
-}
-
-function applyRBL(hexScramble, rul, rdl) {
-    const rulRotation = rul < 0 ? 12 + rul : rul;
-    const rdlRotation = rdl < 0 ? 12 + rdl : rdl;
-    
-    let result = '';
-    
-    for (let i = 0; i < 12; i++) {
-        const sourceIndex = (i + rulRotation) % 12;
-        result += hexScramble[sourceIndex];
-    }
-    
-    result += hexScramble[12];
-    
-    for (let i = 0; i < 12; i++) {
-        const sourceIndex = 13 + ((i + rdlRotation) % 12);
-        result += hexScramble[sourceIndex];
-    }
-    
-    return result;
-}
-
-function getValidRBLForShape(shapeIndex) {
-    const VALID_ROTATIONS = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
-    
-    // Define restricted patterns with their allowed rotations
-    const RESTRICTED_PATTERNS = {
-        '111111111111': [0],
-        '011011011011': [0, 1],
-        '110110110110': [0, -1],
-        '001100110011': [0, -2],
-        '110011001100': [0, 2],
-        '011110011110': [1, -1, -3],
-        '001111001111': [1, 2, -2],
-        '110011110011': [2, 3, -2]
-    };
-    
-    const shapeValue = pleaseSaveAllValidShapeIndicesHereThankYou[shapeIndex];
-    const s24 = shapeValue.toString(2).padStart(24, '0');
-    const top = s24.slice(0, 12);
-    const bottom = s24.slice(12, 24);
-    
-    const getValidRotations = (layer) => {
-        // Check if this layer matches a restricted pattern
-        if (RESTRICTED_PATTERNS[layer]) {
-            return [...RESTRICTED_PATTERNS[layer]];
-        }
-        
-        // Otherwise, find all valid rotations
-        const valid = [];
-        for (const r of VALID_ROTATIONS) {
-            const rotated = rotate12(layer, r);
-            if (layerIsValid(rotated)) valid.push(r);
-        }
-        return valid;
-    };
-    
-    return {
-        top: getValidRotations(top),
-        bottom: getValidRotations(bottom)
-    };
-}
-
-function rotate12(s, rot) {
-    if (!rot) return s;
-    rot = ((rot % 12) + 12) % 12;
-    if (rot === 0) return s;
-    return s.slice(rot) + s.slice(0, rot);
-}
-
-function layerIsValid(s) {
-    if (s.length !== 12) return false;
-    
-    const countLeading = (str) => {
-        let c = 0;
-        for (let ch of str) {
-            if (ch === '1') c++; else break;
-        }
-        return c;
-    };
-    
-    const countTrailing = (str) => {
-        let c = 0;
-        for (let i = str.length - 1; i >= 0; i--) {
-            if (str[i] === '1') c++; else break;
-        }
-        return c;
-    };
-    
-    const lead = countLeading(s);
-    if (lead % 2 === 1) return false;
-    
-    const trail = countTrailing(s);
-    if (trail % 2 === 1) return false;
-    
-    if (s[5] === '1') {
-        const after = s.slice(6, 12);
-        const onesAfter = (after.match(/1/g) || []).length;
-        if (onesAfter % 2 === 1) return false;
-    }
-    
-    return true;
 }
 
 // Helper function to translate hex to piece code

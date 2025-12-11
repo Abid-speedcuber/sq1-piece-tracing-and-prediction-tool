@@ -45,19 +45,11 @@ let trainingHoldStartTime = 0;
 const TIMER_HOLD_THRESHOLD = 210; // 150ms
 
 function loadTrainingSelectedCases() {
-    const saved = localStorage.getItem('sq1TrainingSelectedCases');
-    if (saved) {
-        try {
-            trainingSelectedCases = JSON.parse(saved);
-        } catch (e) {
-            console.error('Error loading training selected cases:', e);
-            trainingSelectedCases = [];
-        }
-    }
+    trainingSelectedCases = window.CaseSelector.load('solves');
 }
 
 function saveTrainingSelectedCases() {
-    localStorage.setItem('sq1TrainingSelectedCases', JSON.stringify(trainingSelectedCases));
+    window.CaseSelector.save('solves', trainingSelectedCases);
 }
 
 function getTrainingTitleText() {
@@ -771,27 +763,18 @@ function generateNextTrainingScrambleData() {
         // Generate training scramble
         const result = window.TrainingModule.generateTrainingScramble(solution);
         
-        // Apply RBL transformation if lock orientation is off
-        let finalHex = result.randomHex;
-        let rul = 0, rdl = 0;
-        let mirrorApplied = false;
+        // Get display and true hex using unified function
+        const hexData = window.TrainingModule.getTwoHex(
+            solution,
+            trainingSettings.lockOrientation,
+            trainingSettings.allowMirror,
+            NO_MIRROR_SHAPES
+        );
         
-        if (!trainingSettings.lockOrientation) {
-            const rblResult = applyRBLToHex(finalHex);
-            finalHex = rblResult.hex;
-            rul = rblResult.rul;
-            rdl = rblResult.rdl;
-            
-            // Check if this is a symmetric shape
-            const shapeIndex = hexToShapeIndex(finalHex);
-            const isSymmetric = NO_MIRROR_SHAPES.has(shapeIndex);
-            
-            // Apply mirror transformation if allowed and not symmetric
-            if (trainingSettings.allowMirror && !isSymmetric && Math.random() < 0.5) {
-                finalHex = applyMirrorToHex(finalHex);
-                mirrorApplied = true;
-            }
-        }
+        const finalHex = hexData.displayHex;
+        const rul = hexData.rul;
+        const rdl = hexData.rdl;
+        const mirrorApplied = hexData.mirrorApplied;
 
         // Convert hex to scramble notation
         let scrambleText = finalHex;
@@ -1217,201 +1200,36 @@ function updatePeekButtonVisibility() {
 }
 
 function openTrainingCaseSelectionModal() {
-    const modal = document.createElement('div');
-    modal.className = 'modal';
-    modal.style.display = 'block';
-
-    // Collect all cases
-    const allCases = [];
-    STATE.cards.forEach((card, cardIdx) => {
-        if (!card.cases) return;
-        card.cases.forEach((caseItem, caseIdx) => {
-            // Skip cases with no algorithm
-            if (!caseItem.solution || caseItem.solution.trim() === '' || caseItem.solution.toLowerCase() === 'no algorithm') {
-                return;
-            }
-            allCases.push({
-                cardIdx,
-                caseIdx,
-                cardTitle: card.title || 'Untitled',
-                parity: caseItem.type === 'parity' ? 'Odd' : 'Even',
-                orientation: caseItem.variant === 'original' ? 'Original' : 'Mirror',
-                algorithm: caseItem.solution || 'No algorithm',
-                caseName: caseItem.customName || (card.title || 'Case') + (caseIdx + 1),
-                selected: trainingSelectedCases.includes(`${cardIdx}-${caseIdx}`)
-            });
-        });
-    });
-
-    function renderCaseTable(searchQuery = '') {
-        const filteredCases = searchQuery 
-            ? allCases.filter(c => c.cardTitle.toLowerCase().includes(searchQuery.toLowerCase()))
-            : allCases;
-            
-        let tableHtml = '';
-        filteredCases.forEach((caseData) => {
-            tableHtml += `
-                <tr>
-                    <td style="text-align:center;">
-                        <input type="checkbox" ${caseData.selected ? 'checked' : ''} 
-                               onchange="window.toggleTrainingCaseSelection(${caseData.cardIdx}, ${caseData.caseIdx}, this.checked)">
-                    </td>
-                    <td>${caseData.cardTitle}</td>
-                    <td>${caseData.parity}</td>
-                    <td>${caseData.orientation}</td>
-                    <td>${caseData.caseName}</td>
-                    <td style="font-family:monospace;font-size:11px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${caseData.algorithm}</td>
-                </tr>
-            `;
-        });
-        return tableHtml || '<tr><td colspan="6" style="text-align:center;color:#999;padding:20px;">No cases found</td></tr>';
-    }
-
-    modal.innerHTML = `
-        <div class="modal-content" style="max-width:90vw;max-height:90vh;">
-            <div class="modal-header">
-                <h3>Select Cases for Training</h3>
-                <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
-            </div>
-            <div class="modal-body" style="overflow:auto;">
-                <div style="margin-bottom:15px;">
-                    <input type="text" id="trainingCaseSearchInput" class="settings-input" placeholder="Search by card name..." 
-                           style="width:100%;padding:8px;margin-bottom:10px;">
-                </div>
-                <div style="margin-bottom:15px;display:flex;gap:10px;">
-                    <button class="btn" onclick="window.selectAllTrainingCases()">Select All</button>
-                    <button class="btn" onclick="window.deselectAllTrainingCases()">Deselect All</button>
-                </div>
-                <div style="overflow-x:auto;">
-                    <table class="variable-table" style="min-width:800px;">
-                        <thead>
-                            <tr>
-                                <th style="width:60px;text-align:center;">Select</th>
-                                <th style="width:150px;">Card Name</th>
-                                <th style="width:80px;">Parity</th>
-                                <th style="width:100px;">Orientation</th>
-                                <th style="width:80px;">Angle</th>
-                                <th>Algorithm</th>
-                            </tr>
-                        </thead>
-                        <tbody id="trainingCaseSelectionTableBody">
-                            ${renderCaseTable()}
-                        </tbody>
-                    </table>
-                </div>
-                <div style="margin-top:15px;">
-                    <button class="btn btn-primary" onclick="window.saveTrainingCaseSelection()">Done</button>
-                </div>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    // Add search functionality
-    document.getElementById('trainingCaseSearchInput').addEventListener('input', (e) => {
-        const searchQuery = e.target.value.toLowerCase();
-        document.getElementById('trainingCaseSelectionTableBody').innerHTML = renderCaseTable(searchQuery);
-    });
-
-    window.toggleTrainingCaseSelection = function(cardIdx, caseIdx, selected) {
-        const key = `${cardIdx}-${caseIdx}`;
-        if (selected) {
-            if (!trainingSelectedCases.includes(key)) {
-                trainingSelectedCases.push(key);
-            }
-        } else {
-            const idx = trainingSelectedCases.indexOf(key);
-            if (idx > -1) {
-                trainingSelectedCases.splice(idx, 1);
-            }
-        }
-        saveTrainingSelectedCases();
+    window.CaseSelector.openModal('solves', (selected) => {
+        trainingSelectedCases = selected;
         
-        // Update the case in allCases array
-        const caseData = allCases.find(c => c.cardIdx === cardIdx && c.caseIdx === caseIdx);
-        if (caseData) {
-            caseData.selected = selected;
-        }
-    };
-
-    window.selectAllTrainingCases = function() {
-        trainingSelectedCases = [];
-        allCases.forEach(caseData => {
-            const key = `${caseData.cardIdx}-${caseData.caseIdx}`;
-            if (!trainingSelectedCases.includes(key)) {
-                trainingSelectedCases.push(key);
-            }
-            caseData.selected = true;
-        });
-        saveTrainingSelectedCases();
-        const searchQuery = document.getElementById('trainingCaseSearchInput').value.toLowerCase();
-        document.getElementById('trainingCaseSelectionTableBody').innerHTML = renderCaseTable(searchQuery);
-    };
-
-    window.deselectAllTrainingCases = function() {
-        trainingSelectedCases = [];
-        allCases.forEach(caseData => {
-            caseData.selected = false;
-        });
-        saveTrainingSelectedCases();
-        const searchQuery = document.getElementById('trainingCaseSearchInput').value.toLowerCase();
-        document.getElementById('trainingCaseSelectionTableBody').innerHTML = renderCaseTable(searchQuery);
-    };
-
-    window.saveTrainingCaseSelection = function() {
-        modal.remove();
-        
-        // Clear all pre-generated scrambles and history
         trainingPreGeneratedScrambles = [];
         trainingScrambleHistory = [];
         trainingCurrentHistoryIndex = -1;
         
-        // Update training modal title and restart if it's open
         const trainingModal = document.getElementById('coTrackerTrainingModal');
         if (trainingModal && trainingModal.style.display !== 'none') {
             if (trainingSelectedCases.length > 0) {
-                // Generate fresh scrambles with new selection
                 for (let i = 0; i < 3; i++) {
                     trainingPreGeneratedScrambles.push(generateNextTrainingScrambleData());
                 }
                 displayNextTrainingScramble();
                 
-                // Update title
                 const titleEl = document.getElementById('trainingCaseTitle');
-                if (titleEl) {
-                    titleEl.textContent = getTrainingTitleText();
-                }
+                if (titleEl) titleEl.textContent = getTrainingTitleText();
                 
                 const selectCasesSpan = document.querySelector('[onclick="window.openTrainingCaseSelectionModalFromHeader()"]');
-                if (selectCasesSpan) {
-                    selectCasesSpan.textContent = `${trainingSelectedCases.length} case(s) selected`;
-                }
+                if (selectCasesSpan) selectCasesSpan.textContent = `${trainingSelectedCases.length} case(s) selected`;
             } else {
-                // Update to show empty state
                 const titleEl = document.getElementById('trainingCaseTitle');
-                if (titleEl) {
-                    titleEl.textContent = getTrainingTitleText();
-                }
+                if (titleEl) titleEl.textContent = getTrainingTitleText();
                 document.getElementById('trainingScrambleText').innerHTML = '<span style="color:#999;">Select cases to begin training</span>';
                 document.getElementById('trainingScrambleImage').innerHTML = '<div style="color:#999;font-size:14px;">No cases selected</div>';
                 const selectCasesSpan = document.querySelector('[onclick="window.openTrainingCaseSelectionModalFromHeader()"]');
-                if (selectCasesSpan) {
-                    selectCasesSpan.textContent = '0 case(s) selected';
-                }
+                if (selectCasesSpan) selectCasesSpan.textContent = '0 case(s) selected';
             }
         }
-        
-        // Cleanup
-        delete window.toggleTrainingCaseSelection;
-        delete window.selectAllTrainingCases;
-        delete window.deselectAllTrainingCases;
-        delete window.saveTrainingCaseSelection;
-    };
-
-    modal.onclick = (e) => {
-        if (e.target === modal) modal.remove();
-    };
+    });
 }
 
 function openTrainingInstructionModal() {
@@ -1537,171 +1355,6 @@ document.addEventListener('keyup', (e) => {
         }
     }
 });
-
-function applyRBLToHex(hexScramble) {
-    try {
-        // Get shape index
-        const shapeIndex = getShapeIndexFromHex(hexScramble);
-        
-        // Get valid rotations for this shape
-        const validRotations = getValidRBLForShape(shapeIndex);
-        
-        // Select random RUL and RDL
-        const rul = validRotations.top[Math.floor(Math.random() * validRotations.top.length)];
-        const rdl = validRotations.bottom[Math.floor(Math.random() * validRotations.bottom.length)];
-        
-        // Apply RBL
-        return {
-            hex: applyRBL(hexScramble, rul, rdl),
-            rul: rul,
-            rdl: rdl
-        };
-    } catch (e) {
-        console.error('Error applying RBL:', e);
-        return { hex: hexScramble, rul: 0, rdl: 0 };
-    }
-}
-
-function applyMirrorToHex(hexScramble) {
-    const parsed = parseHexScramble(hexScramble);
-    return parsed.bottom + parsed.equator + parsed.top;
-}
-
-function parseHexScramble(hexScramble) {
-    hexScramble = hexScramble.replace(/\s/g, '');
-    return {
-        top: hexScramble.slice(0, 12),
-        equator: hexScramble[12],
-        bottom: hexScramble.slice(13, 25)
-    };
-}
-
-function getShapeIndexFromHex(hexScramble) {
-    const parsed = parseHexScramble(hexScramble);
-    const fullHex = parsed.top + parsed.bottom;
-    const shapeArray = new Array(24);
-    
-    for (let i = 0; i < 24; i++) {
-        const piece = fullHex[i].toLowerCase();
-        const isCorner = ['1', '3', '5', '7', '9', 'b', 'd', 'f'].includes(piece);
-        shapeArray[i] = isCorner ? 1 : 0;
-    }
-    
-    let value = 0;
-    for (let i = 0; i < 24; i++) {
-        value |= shapeArray[23 - i] << i;
-    }
-    
-    const shapeIndex = pleaseSaveAllValidShapeIndicesHereThankYou.indexOf(value);
-    if (shapeIndex === -1) throw new Error('Invalid shape');
-    return shapeIndex;
-}
-
-function getValidRBLForShape(shapeIndex) {
-    const VALID_ROTATIONS = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
-    
-    // Define restricted patterns with their allowed rotations
-    const RESTRICTED_PATTERNS = {
-        '111111111111': [0],
-        '011011011011': [0, 1],
-        '110110110110': [0, -1],
-        '001100110011': [0, -2],
-        '110011001100': [0, 2],
-        '011110011110': [1, -1, -3],
-        '001111001111': [1, 2, -2],
-        '110011110011': [2, 3, -2]
-    };
-    
-    const shapeValue = pleaseSaveAllValidShapeIndicesHereThankYou[shapeIndex];
-    const s24 = shapeValue.toString(2).padStart(24, '0');
-    const top = s24.slice(0, 12);
-    const bottom = s24.slice(12, 24);
-    
-    const getValidRotations = (layer) => {
-        // Check if this layer matches a restricted pattern
-        if (RESTRICTED_PATTERNS[layer]) {
-            return [...RESTRICTED_PATTERNS[layer]];
-        }
-        
-        // Otherwise, find all valid rotations
-        const valid = [];
-        for (const r of VALID_ROTATIONS) {
-            const rotated = rotate12(layer, r);
-            if (layerIsValid(rotated)) valid.push(r);
-        }
-        return valid;
-    };
-    
-    return {
-        top: getValidRotations(top),
-        bottom: getValidRotations(bottom)
-    };
-}
-
-function rotate12(s, rot) {
-    if (!rot) return s;
-    rot = ((rot % 12) + 12) % 12;
-    if (rot === 0) return s;
-    return s.slice(rot) + s.slice(0, rot);
-}
-
-function layerIsValid(s) {
-    if (s.length !== 12) return false;
-    
-    const countLeading = (str) => {
-        let c = 0;
-        for (let ch of str) {
-            if (ch === '1') c++; else break;
-        }
-        return c;
-    };
-    
-    const countTrailing = (str) => {
-        let c = 0;
-        for (let i = str.length - 1; i >= 0; i--) {
-            if (str[i] === '1') c++; else break;
-        }
-        return c;
-    };
-    
-    const lead = countLeading(s);
-    if (lead % 2 === 1) return false;
-    
-    const trail = countTrailing(s);
-    if (trail % 2 === 1) return false;
-    
-    if (s[5] === '1') {
-        const after = s.slice(6, 12);
-        const onesAfter = (after.match(/1/g) || []).length;
-        if (onesAfter % 2 === 1) return false;
-    }
-    
-    return true;
-}
-
-function applyRBL(hexScramble, rul, rdl) {
-    const rulRotation = rul < 0 ? 12 + rul : rul;
-    const rdlRotation = rdl < 0 ? 12 + rdl : rdl;
-    
-    let result = '';
-    
-    // Apply RUL to top layer
-    for (let i = 0; i < 12; i++) {
-        const sourceIndex = (i + rulRotation) % 12;
-        result += hexScramble[sourceIndex];
-    }
-    
-    // Keep equator
-    result += hexScramble[12];
-    
-    // Apply RDL to bottom layer
-    for (let i = 0; i < 12; i++) {
-        const sourceIndex = 13 + ((i + rdlRotation) % 12);
-        result += hexScramble[sourceIndex];
-    }
-    
-    return result;
-}
 
 // Export functions
 if (typeof window !== 'undefined') {
