@@ -41,11 +41,18 @@ function loadMemoTrainingSettings() {
     const saved = localStorage.getItem('sq1MemoTrainingSettings');
     if (saved) {
         try {
-            memoTrainingSettings = JSON.parse(saved);
+            const parsed = JSON.parse(saved);
+            memoTrainingSettings = { ...memoTrainingSettings, ...parsed };
         } catch (e) {
             console.error('Error loading memo training settings:', e);
         }
     }
+    
+    // Ensure memoTrainingSettings is always defined with defaults
+    if (!window.memoTrainingSettings) {
+        window.memoTrainingSettings = memoTrainingSettings;
+    }
+    
     loadMemoSelectedCases();
 }
 
@@ -99,7 +106,7 @@ function openMemoTrainingModal() {
                     
                     <div style="display:flex;gap:10px;">
                         <button class="btn" id="memoNextBtn" style="display:none;">Skip Case</button>
-                        <button class="btn" id="memoStopBtn" style="display:none;">Stop Training</button>
+                        <button class="btn btn-primary" id="memoToggleTrainingBtn" style="display:none;">Stop Training</button>
                     </div>
                 </div>
             </div>
@@ -147,10 +154,12 @@ function openMemoTrainingModal() {
         }
         loadNextMemoCase();
     });
-    document.getElementById('memoStopBtn').addEventListener('click', () => {
-        showMemoConfirm('Are you sure you want to stop training?', () => {
-            endTrainingSession();
-        });
+    document.getElementById('memoToggleTrainingBtn').addEventListener('click', () => {
+        if (memoTrainingState.isActive) {
+            showMemoConfirm('Are you sure you want to stop training?', () => {
+                endTrainingSession();
+            });
+        }
     });
     document.getElementById('memoSettingsBtn').addEventListener('click', () => openSettingsModal('memo'));
     document.getElementById('memoCloseBtn').addEventListener('click', () => modal.remove());
@@ -439,11 +448,14 @@ function startMemoTrainingWithMode() {
         inputLocked: false
     };
     
-    // Show training area and stop button
+    // Show training area and toggle button
     const trainingArea = document.getElementById('memoTrainingArea');
-    const stopBtn = document.getElementById('memoStopBtn');
+    const toggleBtn = document.getElementById('memoToggleTrainingBtn');
     if (trainingArea) trainingArea.style.display = 'flex';
-    if (stopBtn) stopBtn.style.display = 'inline-block';
+    if (toggleBtn) {
+        toggleBtn.style.display = 'inline-block';
+        toggleBtn.textContent = 'Stop Training';
+    }
     
     // Update label text based on mode and error mode
     updateLiveScorecardLabels();
@@ -527,11 +539,14 @@ function startMemoTrainingDirectly() {
         inputLocked: false
     };
 
-    // Show training area and stop button
+    // Show training area and toggle button
     const trainingArea = document.getElementById('memoTrainingArea');
-    const stopBtn = document.getElementById('memoStopBtn');
+    const toggleBtn = document.getElementById('memoToggleTrainingBtn');
     if (trainingArea) trainingArea.style.display = 'flex';
-    if (stopBtn) stopBtn.style.display = 'inline-block';
+    if (toggleBtn) {
+        toggleBtn.style.display = 'inline-block';
+        toggleBtn.textContent = 'Stop Training';
+    }
     
     // Don't start timer yet - will start on first click
     
@@ -583,11 +598,13 @@ function loadNextMemoCase() {
         memoMirrorApplied = mirrorApplied;
         
         // Update biodata with path format
+        const angleName = `angle${caseIdx + 1}`;
+        const displayCaseName = caseItem.customName ? `${angleName} - ${caseItem.customName}` : angleName;
         const pathParts = [
             card.title || 'Untitled',
             caseItem.variant === 'original' ? 'original' : 'mirror',
             caseItem.type === 'parity' ? 'odd' : 'even',
-            `angle${caseIdx + 1}`
+            displayCaseName
         ];
         document.getElementById('biodataPath').textContent = pathParts.join(' / ');
         document.getElementById('biodataAlgorithm').textContent = caseItem.solution || 'No algorithm';
@@ -1336,9 +1353,9 @@ function endTrainingSession() {
     const container = document.getElementById('memoImageContainer');
     container.innerHTML = resultsHtml;
     
-    // Hide next and stop buttons
+    // Hide next and toggle buttons
     document.getElementById('memoNextBtn').style.display = 'none';
-    document.getElementById('memoStopBtn').style.display = 'none';
+    document.getElementById('memoToggleTrainingBtn').style.display = 'none';
 }
 
 function resetMemoTraining() {

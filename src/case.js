@@ -124,7 +124,7 @@ function renderCases(cardIdx) {
         
         if (columns > 1) {
             container.style.display = 'grid';
-            container.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+            container.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
             container.style.gap = '15px';
         } else {
             container.style.display = 'block';

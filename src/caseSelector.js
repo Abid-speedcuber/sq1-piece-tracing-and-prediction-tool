@@ -45,6 +45,8 @@ const CaseSelector = {
                     caseItem.solution.toLowerCase() === 'no algorithm') {
                     return;
                 }
+                const angleName = `angle${caseIdx + 1}`;
+                const displayName = caseItem.customName ? `${angleName} - ${caseItem.customName}` : angleName;
                 allCases.push({
                     cardIdx,
                     caseIdx,
@@ -52,7 +54,7 @@ const CaseSelector = {
                     parity: caseItem.type === 'parity' ? 'Odd' : 'Even',
                     orientation: caseItem.variant === 'original' ? 'Original' : 'Mirror',
                     algorithm: caseItem.solution || 'No algorithm',
-                    caseName: caseItem.customName || (card.title || 'Case') + (caseIdx + 1)
+                    caseName: displayName
                 });
             });
         });

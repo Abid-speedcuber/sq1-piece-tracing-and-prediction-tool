@@ -13,7 +13,15 @@ function openSettingsModal(context = 'sidebar') {
         memo: { enabled: context === 'memo', id: 'memo', icon: 'settings-memo' }
     };
     
+    // Determine initial active tab based on context
     let activeTab = 'overall';
+    if (context === 'card') {
+        activeTab = 'case';
+    } else if (context === 'training') {
+        activeTab = 'training';
+    } else if (context === 'memo') {
+        activeTab = 'memo';
+    }
     
     function renderTabContent(tabId) {
         switch(tabId) {
@@ -291,6 +299,24 @@ function openSettingsModal(context = 'sidebar') {
         if (contentArea) {
             contentArea.innerHTML = renderTabContent(activeTab);
         }
+        
+        // Update button styles to reflect active state
+        updateTabButtons();
+    }
+    
+    function updateTabButtons() {
+        for (const [key, tab] of Object.entries(tabs)) {
+            const button = document.querySelector(`[data-tab-id="${key}"]`);
+            if (button) {
+                const isActive = activeTab === key;
+                const isDisabled = !tab.enabled;
+                const bgColor = isActive ? '#007bff' : (isDisabled ? '#f0f0f0' : '#fff');
+                const textColor = isActive ? '#fff' : (isDisabled ? '#999' : '#333');
+                
+                button.style.background = bgColor;
+                button.style.color = textColor;
+            }
+        }
     }
     
     function renderTabs() {
@@ -305,7 +331,7 @@ function openSettingsModal(context = 'sidebar') {
             const opacity = isDisabled ? '0.5' : '1';
             
             tabsHtml += `
-                <button onclick="${isDisabled ? '' : `window.switchSettingsTab('${key}')`}" 
+                <button data-tab-id="${key}" onclick="${isDisabled ? '' : `window.switchSettingsTab('${key}')`}" 
                         style="padding:12px;background:${bgColor};color:${textColor};border:1px solid #ddd;cursor:${cursor};opacity:${opacity};border-radius:4px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;"
                         ${isDisabled ? 'disabled' : ''}
                         title="${key.charAt(0).toUpperCase() + key.slice(1)} Settings">
