@@ -309,6 +309,7 @@ function openSettingsModal(context = 'sidebar') {
         const zeroZeroHex = '011233455677|998bbaddcffe';
         
         // Generate (0,0) base image (fully colored, randomized - decoy)
+        console.log('[MemoOrder] Generating base image with hex:', zeroZeroHex);
         const baseImage = window.Square1VisualizerLibraryWithSillyNames.visualizeFromHexCodePlease(
             zeroZeroHex,
             200, 
@@ -317,8 +318,10 @@ function openSettingsModal(context = 'sidebar') {
             false,
             null
         );
+        console.log('[MemoOrder] Base image generated, length:', baseImage.length);
         
         // Generate hitbox overlay (invisible polygons with labels)
+        console.log('[MemoOrder] Generating hitbox overlay with pieceLabels:', pieceLabels);
         const hitboxOverlay = window.Square1VisualizerLibraryWithSillyNames.visualizeFromHexCodePlease(
             zeroZeroHex,
             200, 
@@ -327,6 +330,7 @@ function openSettingsModal(context = 'sidebar') {
             true, // Show labels
             pieceLabels
         );
+        console.log('[MemoOrder] Hitbox overlay generated, length:', hitboxOverlay.length);
         
         return `
             <div class="settings-group">
@@ -382,18 +386,37 @@ function openSettingsModal(context = 'sidebar') {
     }
     
     function updateTabContent() {
+        console.log('[MemoOrder] updateTabContent called, activeTab:', activeTab);
         const contentArea = document.getElementById('settingsTabContent');
         if (contentArea) {
             contentArea.innerHTML = renderTabContent(activeTab);
+            console.log('[MemoOrder] Content area updated with renderTabContent');
+        } else {
+            console.error('[MemoOrder] settingsTabContent element NOT FOUND!');
         }
         
         // Update button styles to reflect active state
         updateTabButtons();
         
         // Initialize memo order selector if on memo tab
-        if (activeTab === 'memo') {
-            setTimeout(() => initializeMemoOrderSelector(), 100);
-        }
+        // Initialize memo order selector if on memo tab
+    console.log('[MemoOrder] updateTabContent - activeTab check:', activeTab, 'is memo?', activeTab === 'memo');
+    if (activeTab === 'memo') {
+        console.log('[MemoOrder] Active tab is memo, scheduling initialization in 100ms');
+        console.log('[MemoOrder] Checking if initializeMemoOrderSelector exists:', typeof initializeMemoOrderSelector);
+        setTimeout(() => {
+            console.log('[MemoOrder] Timeout fired after 100ms');
+            console.log('[MemoOrder] About to call initializeMemoOrderSelector');
+            console.log('[MemoOrder] Function check:', typeof initializeMemoOrderSelector);
+            if (typeof initializeMemoOrderSelector === 'function') {
+                initializeMemoOrderSelector();
+            } else {
+                console.error('[MemoOrder] initializeMemoOrderSelector is not a function!');
+            }
+        }, 100);
+    } else {
+        console.log('[MemoOrder] Active tab is NOT memo, skipping initialization. activeTab =', activeTab);
+    }
         
         // Reload training settings to get fresh values
         if (activeTab === 'training') {
@@ -457,11 +480,17 @@ function openSettingsModal(context = 'sidebar') {
     `;
     
     document.body.appendChild(modal);
+    console.log('[MemoOrder] Settings modal added to body, initial activeTab:', activeTab);
     
     window.switchSettingsTab = function(tabId) {
+        console.log('[MemoOrder] switchSettingsTab called, switching from', activeTab, 'to', tabId);
         activeTab = tabId;
         updateTabContent();
     };
+    
+    // Initialize the initial tab content (including memo selector if memo tab is active)
+    console.log('[MemoOrder] About to call updateTabContent for initial tab:', activeTab);
+    updateTabContent();
     
     modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
 }
@@ -866,28 +895,71 @@ function liveUpdateCaseSettingsChanges() {
 }
 
 function initializeMemoOrderSelector() {
+    console.log('[MemoOrder] ========================================');
+    console.log('[MemoOrder] === INITIALIZING MEMO ORDER SELECTOR ===');
+    console.log('[MemoOrder] ========================================');
+    console.log('[MemoOrder] Function called at:', new Date().toISOString());
+    
     window.memoOrderClickSequence = [];
+    console.log('[MemoOrder] Reset click sequence to empty array');
     
     const overlay = document.getElementById('memoOrderOverlay');
-    if (!overlay) return;
+    console.log('[MemoOrder] Looking for overlay with ID: memoOrderOverlay');
+    console.log('[MemoOrder] Overlay element found:', !!overlay);
+    console.log('[MemoOrder] Overlay element:', overlay);
+    
+    if (!overlay) {
+        console.error('[MemoOrder] ❌ OVERLAY ELEMENT NOT FOUND!');
+        console.error('[MemoOrder] Available elements with "memo" in ID:');
+        document.querySelectorAll('[id*="memo"]').forEach(el => {
+            console.error('[MemoOrder]   -', el.id, el.tagName);
+        });
+        return;
+    }
+    
+    console.log('[MemoOrder] ✓ Overlay found successfully');
+    
+    // Clear all existing click states from polygons
+    const existingPolygons = overlay.querySelectorAll('polygon');
+    console.log('[MemoOrder] Found', existingPolygons.length, 'existing polygons to clear');
+    existingPolygons.forEach((poly, idx) => {
+        const hadClicked = poly.dataset.clicked;
+        const hadHex = poly.dataset.hexValue;
+        delete poly.dataset.clicked;
+        delete poly.dataset.hexValue;
+        if (hadClicked || hadHex) {
+            console.log('[MemoOrder] Cleared polygon', idx, '- had clicked:', hadClicked, 'had hex:', hadHex);
+        }
+    });
+    console.log('[MemoOrder] Overlay element found:', !!overlay);
+    if (!overlay) {
+        console.error('[MemoOrder] Overlay element NOT found!');
+        return;
+    }
     
     const allPolygons = overlay.querySelectorAll('polygon');
     const allTexts = overlay.querySelectorAll('text');
+    console.log('[MemoOrder] Found polygons:', allPolygons.length, 'texts:', allTexts.length);
     
     // Hide all labels initially
-    allTexts.forEach(textEl => {
+    console.log('[MemoOrder] Hiding all text labels initially');
+    allTexts.forEach((textEl, idx) => {
         textEl.style.opacity = '0';
         textEl.style.pointerEvents = 'none';
+        console.log(`[MemoOrder] Text ${idx}: "${textEl.textContent.trim()}" - opacity set to 0, pointer-events none`);
     });
     
     // Make each polygon a clickable hitbox
-    allPolygons.forEach(polygon => {
+    console.log('[MemoOrder] Processing polygons for click handlers...');
+    allPolygons.forEach((polygon, polyIdx) => {
+        console.log(`[MemoOrder] --- Processing polygon ${polyIdx} ---`);
         polygon.style.fill = 'transparent';
         polygon.style.stroke = 'transparent';
         polygon.style.pointerEvents = 'auto';
         polygon.style.cursor = 'pointer';
         polygon.style.webkitTapHighlightColor = 'transparent';
         polygon.style.userSelect = 'none';
+        console.log(`[MemoOrder] Polygon ${polyIdx}: styles applied - pointer-events: auto, cursor: pointer`);
         
         const parentSvg = polygon.closest('svg');
         const textsInSvg = parentSvg ? parentSvg.querySelectorAll('text') : [];
@@ -962,38 +1034,58 @@ function initializeMemoOrderSelector() {
             }
             
             if (pieceHex) {
+                console.log(`[MemoOrder] Polygon ${polyIdx}: Found pieceHex="${pieceHex}", pieceCode="${pieceCode}"`);
+                console.log(`[MemoOrder] Polygon ${polyIdx}: Adding click event listener`);
                 polygon.addEventListener('click', (e) => {
+                    console.log(`[MemoOrder] CLICK on polygon ${polyIdx}, pieceHex="${pieceHex}", pieceCode="${pieceCode}"`);
                     e.stopPropagation();
                     handleMemoOrderClick(pieceCode, closestText, polygon, pieceHex);
                 });
                 
                 polygon.addEventListener('mouseenter', () => {
-                    if (!polygon.dataset.clicked) {
+                    const isClicked = polygon.dataset.clicked === 'true';
+                    console.log(`[MemoOrder] Mouse enter polygon ${polyIdx}, clicked state: ${isClicked}`);
+                    if (!isClicked) {
                         polygon.style.cursor = 'pointer';
                     } else {
                         polygon.style.cursor = 'default';
                     }
                 });
+            } else {
+                console.warn(`[MemoOrder] Polygon ${polyIdx}: No pieceHex found!`);
             }
+        } else {
+            console.warn(`[MemoOrder] Polygon ${polyIdx}: No closest text found (minDistance: ${minDistance})`);
         }
     });
+    console.log('[MemoOrder] === INITIALIZATION COMPLETE ===');
+    console.log('[MemoOrder] === INITIALIZATION COMPLETE ===');
 }
 
-function handleMemoOrderClick(pieceCode, textEl, polygon, hexValue) {
+function handleMemoOrderClick(pieceCode, textElement, polygon, hexValue) {
+    console.log('[MemoOrder] handleMemoOrderClick called:', { pieceCode, hexValue, alreadyClicked: polygon.dataset.clicked, sequenceLength: window.memoOrderClickSequence?.length });
     if (polygon.dataset.clicked === 'true') {
+        console.log('[MemoOrder] Polygon already clicked, ignoring');
         return;
+    }
+    
+    if (!window.memoOrderClickSequence) {
+        console.error('[MemoOrder] Click sequence not initialized!');
+        window.memoOrderClickSequence = [];
     }
     
     polygon.dataset.clicked = 'true';
     polygon.dataset.hexValue = hexValue;
+    console.log('[MemoOrder] Marked polygon as clicked, hexValue:', hexValue);
     
     window.memoOrderClickSequence.push(hexValue.toLowerCase());
+    console.log('[MemoOrder] Added to sequence. Current sequence:', window.memoOrderClickSequence);
     
-    textEl.style.opacity = '1';
-    textEl.style.fill = 'white';
-    textEl.style.stroke = 'black';
-    textEl.style.strokeWidth = '3';
-    textEl.setAttribute('paint-order', 'stroke');
+    textElement.style.opacity = '1';
+    textElement.style.fill = 'white';
+    textElement.style.stroke = 'black';
+    textElement.style.strokeWidth = '3';
+    textElement.setAttribute('paint-order', 'stroke');
     
     const preview = document.getElementById('memoOrderPreview');
     if (preview) {
