@@ -103,6 +103,15 @@ function normalizeScrambleFormat(input) {
     // Remove all whitespace and normalize slashes
     let clean = normalizeInput(input);
     
+    // SPECIAL CASE: Handle strings that are only slashes
+    const onlySlashes = /^\/+$/.test(clean);
+    if (onlySlashes) {
+        const slashCount = clean.length;
+        // Odd number of slashes = return single slash
+        // Even number of slashes = return empty string
+        return slashCount % 2 === 1 ? '/' : '';
+    }
+    
     // Parse into tokens
     let tokens = parseSets(clean);
     
@@ -230,6 +239,11 @@ function parseSets(str) {
     // Handle empty or whitespace-only input
     if (!str || str.trim() === '') {
         return [];
+    }
+    
+    // SPECIAL CASE: naked slash only
+    if (str.trim() === '/') {
+        return ['/'];
     }
     
     // DECODE FIRST - convert letters and primes to numbers
