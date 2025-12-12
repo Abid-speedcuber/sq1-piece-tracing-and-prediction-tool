@@ -10,7 +10,8 @@ let memoTrainingSettings = {
     errorMode: 'friendly', // 'friendly' or 'punish'
     trainingMode: 'time-attack', // 'time-attack', 'survival', 'marathon'
     timeAttackDuration: 120, // seconds (1, 2, 3, 5, 8, or 10 minutes)
-    marathonTarget: 25 // 25, 50, 75, or 100 cases
+    marathonTarget: 25, // 25, 50, 75, or 100 cases
+    enableVerticalMode: false
 };
 
 let memoCurrentScramble = '';
@@ -767,12 +768,15 @@ function generateMemoVisualization() {
             }
         });
         
+        // Determine ring distance based on vertical mode
+        const ringDistance = memoTrainingSettings.enableVerticalMode ? -95 : 5;
+        
         // Generate base image (decoy - fully colored, randomized)
         const baseImage = window.Square1VisualizerLibraryWithSillyNames.visualizeFromHexCodePlease(
             memoCurrentHex, 
             memoTrainingSettings.imageSize, 
             colorScheme, 
-            5, 
+            ringDistance, 
             false,
             null
         );
@@ -782,7 +786,7 @@ function generateMemoVisualization() {
             memoTrueHex, 
             memoTrainingSettings.imageSize, 
             colorScheme, 
-            5, 
+            ringDistance, 
             true, // Show labels
             pieceLabels
         );
@@ -794,7 +798,36 @@ function generateMemoVisualization() {
         wrapper.style.webkitTapHighlightColor = 'transparent';
         wrapper.style.webkitTouchCallout = 'none';
         wrapper.style.userSelect = 'none';
-        wrapper.innerHTML = baseImage;
+        
+        // Apply vertical mode if enabled
+        if (memoTrainingSettings.enableVerticalMode) {
+            // Parse the baseImage HTML to modify it
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = baseImage;
+            
+            // Find the container div with "display: flex"
+            const flexContainer = tempDiv.querySelector('div[style*="display: flex"]');
+            if (flexContainer) {
+                // Change to vertical layout
+                const currentStyle = flexContainer.getAttribute('style');
+                flexContainer.setAttribute('style', currentStyle.replace('display: flex', 'display: flex; flex-direction: column'));
+                
+                // Find all SVGs and adjust their margins
+                const svgs = flexContainer.querySelectorAll('svg');
+                svgs.forEach((svg, index) => {
+                    if (index === 1) {
+                        // Second SVG - change margin-left to margin-top
+                        const svgStyle = svg.getAttribute('style') || '';
+                        const newStyle = svgStyle.replace(/margin-left:\s*[^;]+;?/, 'margin-top: 10px;');
+                        svg.setAttribute('style', newStyle);
+                    }
+                });
+            }
+            
+            wrapper.innerHTML = tempDiv.innerHTML;
+        } else {
+            wrapper.innerHTML = baseImage;
+        }
         
         // Add invisible hitbox overlay on top
         const overlayDiv = document.createElement('div');
@@ -807,7 +840,36 @@ function generateMemoVisualization() {
         overlayDiv.style.webkitTapHighlightColor = 'transparent';
         overlayDiv.style.webkitTouchCallout = 'none';
         overlayDiv.style.userSelect = 'none';
-        overlayDiv.innerHTML = hitboxOverlay;
+        
+        // Apply vertical mode if enabled
+        if (memoTrainingSettings.enableVerticalMode) {
+            // Parse the hitboxOverlay HTML to modify it
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = hitboxOverlay;
+            
+            // Find the container div with "display: flex"
+            const flexContainer = tempDiv.querySelector('div[style*="display: flex"]');
+            if (flexContainer) {
+                // Change to vertical layout
+                const currentStyle = flexContainer.getAttribute('style');
+                flexContainer.setAttribute('style', currentStyle.replace('display: flex', 'display: flex; flex-direction: column'));
+                
+                // Find all SVGs and adjust their margins
+                const svgs = flexContainer.querySelectorAll('svg');
+                svgs.forEach((svg, index) => {
+                    if (index === 1) {
+                        // Second SVG - change margin-left to margin-top
+                        const svgStyle = svg.getAttribute('style') || '';
+                        const newStyle = svgStyle.replace(/margin-left:\s*[^;]+;?/, 'margin-top: 10px;');
+                        svg.setAttribute('style', newStyle);
+                    }
+                });
+            }
+            
+            overlayDiv.innerHTML = tempDiv.innerHTML;
+        } else {
+            overlayDiv.innerHTML = hitboxOverlay;
+        }
         
         // Apply styles to all SVG elements to prevent tap highlights
         const svgElements = overlayDiv.querySelectorAll('svg, svg *');

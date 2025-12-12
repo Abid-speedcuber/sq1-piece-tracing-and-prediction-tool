@@ -358,6 +358,14 @@ function openSettingsModal(context = 'sidebar') {
                     Allow Mirror
                 </label>
             </div>
+            <div class="settings-group">
+                <label class="settings-label">
+                    <input type="checkbox" ${window.memoTrainingSettings.enableVerticalMode ? 'checked' : ''} 
+                           onchange="updateMemoVerticalMode(this.checked)"
+                           style="margin-right:5px;">
+                    Enable Vertical Mode (Mobile-Friendly)
+                </label>
+            </div>
             <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;margin-top:15px;">
                 <label class="settings-label">Piece Order</label>
                 <div style="padding:10px;background:#f0f0f0;border-radius:4px;font-size:13px;margin-bottom:10px;font-family:monospace;" id="memoOrderCurrentDisplay">
@@ -1200,4 +1208,10 @@ function updateGlobalDivisionSetting(setting, value) {
     
     // Live update: Re-render any open card modal
     liveUpdateCaseModal();
+}
+
+function updateMemoVerticalMode(value) {
+    if (!window.memoTrainingSettings) loadMemoTrainingSettings();
+    window.memoTrainingSettings.enableVerticalMode = value;
+    saveMemoTrainingSettings();
 }
