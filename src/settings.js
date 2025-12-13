@@ -33,7 +33,7 @@ function openSettingsModal(context = 'sidebar') {
                     <div class="settings-group">
                         <label class="settings-label">
                             <input type="checkbox" ${STATE.settings.enableLabels ? 'checked' : ''} 
-                                   onchange="STATE.settings.enableLabels = this.checked; saveState(); if (typeof updatePeekButtonVisibility === 'function') updatePeekButtonVisibility(); liveUpdateCaseModal();" 
+                                   onchange="STATE.settings.enableLabels = this.checked; saveState(); if (typeof updatePeekButtonVisibility === 'function') updatePeekButtonVisibility(); liveUpdateCaseModal(); if (typeof window.refreshHomeScreen === 'function') window.refreshHomeScreen();" 
                                    style="margin-right:5px;">
                             Enable Letter/Number Labels
                         </label>
@@ -403,6 +403,19 @@ function openSettingsModal(context = 'sidebar') {
             console.error('[MemoOrder] settingsTabContent element NOT FOUND!');
         }
         
+        // Update modal title based on active tab
+        const titleEl = document.getElementById('settingsModalTitle');
+        if (titleEl) {
+            const titles = {
+                overall: 'Overall Settings',
+                home: 'Home Screen Settings',
+                case: 'Case Settings',
+                training: 'Training Settings',
+                memo: 'Memo Marathon Settings'
+            };
+            titleEl.textContent = titles[activeTab] || 'Settings';
+        }
+        
         // Update button styles to reflect active state
         updateTabButtons();
         
@@ -475,7 +488,12 @@ function openSettingsModal(context = 'sidebar') {
     modal.innerHTML = `
         <div class="modal-content" style="max-width:700px;max-height:85vh;margin:auto;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;">
             <div class="modal-header">
-                <h3>Settings</h3>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <h3 id="settingsModalTitle">Settings</h3>
+                    ${!STATE.settings.personalization.hideInstructions ? `<button class="icon-btn" onclick="openSettingsTabInstructionModal()" title="Help" style="width:24px;height:24px;background:#555;">
+                        <img src="res/white-instruction.svg" style="width:12px;height:12px;">
+                    </button>` : ''}
+                </div>
                 <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
             </div>
             <div style="display:flex;flex:1;overflow:hidden;">
@@ -1207,11 +1225,222 @@ function updateGlobalDivisionSetting(setting, value) {
     saveState();
     
     // Live update: Re-render any open card modal
-    liveUpdateCaseModal();
+    const openModal = document.querySelector('.modal-content');
+    if (openModal && openModal.querySelector('[id^="cases-container-"]')) {
+        const containerId = openModal.querySelector('[id^="cases-container-"]').id;
+        const cardIdx = parseInt(containerId.split('-')[2]);
+        if (!isNaN(cardIdx)) {
+            // Force re-render the entire case modal content including radio buttons
+            const modalBody = openModal.querySelector('.modal-body');
+            if (modalBody) {
+                const card = STATE.cards[cardIdx];
+                const paritySection = (STATE.settings.divisionSettings?.byParity !== false) ? `<div style="display:flex;align-items:center;gap:15px;">
+                        <label style="font-weight:600;">Parity:</label>
+                        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+                            <input type="radio" name="parity-${cardIdx}" value="odd" ${card.viewState.parity === 'odd' ? 'checked' : ''} onchange="updateCardView(${cardIdx}, 'parity', 'odd')">
+                            <span>Odd</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+                            <input type="radio" name="parity-${cardIdx}" value="even" ${card.viewState.parity === 'even' ? 'checked' : ''} onchange="updateCardView(${cardIdx}, 'parity', 'even')">
+                            <span>Even</span>
+                        </label>
+                    </div>` : '';
+                
+                const orientationSection = (STATE.settings.divisionSettings?.byOrientation !== false) ? `<div style="display:flex;align-items:center;gap:15px;">
+                        <label style="font-weight:600;">Orientation:</label>
+                        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+                            <input type="radio" name="orientation-${cardIdx}" value="original" ${card.viewState.orientation === 'original' ? 'checked' : ''} onchange="updateCardView(${cardIdx}, 'orientation', 'original')">
+                            <span>Original</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+                            <input type="radio" name="orientation-${cardIdx}" value="mirror" ${card.viewState.orientation === 'mirror' ? 'checked' : ''} onchange="updateCardView(${cardIdx}, 'orientation', 'mirror')">
+                            <span>Mirror</span>
+                        </label>
+                    </div>` : '';
+                
+                const controlsSection = modalBody.querySelector('div[style*="display:flex;gap:40px"]');
+                if (controlsSection) {
+                    controlsSection.innerHTML = `
+                        ${paritySection}
+                        ${orientationSection}
+                        <button class="btn btn-primary" onclick="addCase(${cardIdx})" style="margin-left:auto;padding:8px 16px;">
+                            + Add Case
+                        </button>
+                    `;
+                }
+            }
+            renderCases(cardIdx);
+        }
+    }
 }
 
 function updateMemoVerticalMode(value) {
     if (!window.memoTrainingSettings) loadMemoTrainingSettings();
     window.memoTrainingSettings.enableVerticalMode = value;
     saveMemoTrainingSettings();
+    
+    // Regenerate current visualization with new vertical mode if training is active
+    const trainingArea = document.getElementById('memoTrainingArea');
+    if (trainingArea && trainingArea.style.display !== 'none' && typeof generateMemoVisualization === 'function') {
+        generateMemoVisualization();
+    }
+}
+
+function openSettingsTabInstructionModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'block';
+    
+    // Get the active tab from the settings modal
+    const titleEl = document.getElementById('settingsModalTitle');
+    const currentTitle = titleEl ? titleEl.textContent : 'Settings';
+    
+    let instructionContent = '';
+    
+    if (currentTitle === 'Overall Settings') {
+        instructionContent = `
+            <h4 style="margin-bottom:10px;">Color Mappings:</h4>
+            <ul style="padding-left:20px;margin-bottom:20px;">
+                <li style="margin-bottom:10px;">Assign unique colors and labels to each piece position</li>
+                <li style="margin-bottom:10px;">Labels appear on traced pieces when "Enable Letter/Number Labels" is on</li>
+                <li style="margin-bottom:10px;">These colors are used throughout the app for piece tracking</li>
+            </ul>
+            
+            <h4 style="margin-bottom:10px;">Letter/Number Labels:</h4>
+            <ul style="padding-left:20px;margin-bottom:20px;">
+                <li style="margin-bottom:10px;">Toggle to show/hide labels on all traced images</li>
+                <li style="margin-bottom:10px;">Useful for memorization practice</li>
+            </ul>
+            
+            <h4 style="margin-bottom:10px;">Color Scheme:</h4>
+            <ul style="padding-left:20px;margin-bottom:20px;">
+                <li style="margin-bottom:10px;">Set the colors for the fully-colored cube visualization</li>
+                <li style="margin-bottom:10px;">Used in "Show Actual State" and training modes</li>
+            </ul>
+            
+            <h4 style="margin-bottom:10px;">Data Management:</h4>
+            <ul style="padding-left:20px;">
+                <li style="margin-bottom:10px;"><strong>Export Data:</strong> Save all your cases, settings, and variables as a backup file</li>
+                <li style="margin-bottom:10px;"><strong>Import Data:</strong> Restore from a previously exported backup (replaces current data)</li>
+            </ul>
+        `;
+    } else if (currentTitle === 'Home Screen Settings') {
+        instructionContent = `
+            <h4 style="margin-bottom:10px;">Card Size Scale:</h4>
+            <ul style="padding-left:20px;margin-bottom:20px;">
+                <li style="margin-bottom:10px;">Adjust the size of case cards on the home screen (0.5x to 2x)</li>
+                <li style="margin-bottom:10px;">Useful for smaller/larger screens or personal preference</li>
+            </ul>
+            
+            <h4 style="margin-bottom:10px;">Hide Search Bar:</h4>
+            <ul style="padding-left:20px;">
+                <li style="margin-bottom:10px;">Remove the search bar from the home screen if you don't need it</li>
+                <li style="margin-bottom:10px;">Gives more space for your case cards</li>
+            </ul>
+        `;
+    } else if (currentTitle === 'Case Settings') {
+        instructionContent = `
+            <h4 style="margin-bottom:10px;">CS Case Division:</h4>
+            <ul style="padding-left:20px;margin-bottom:20px;">
+                <li style="margin-bottom:10px;"><strong>By Parity:</strong> Separate cases into Odd/Even parity groups</li>
+                <li style="margin-bottom:10px;"><strong>By Orientation:</strong> Separate cases into Original/Mirror orientation groups</li>
+                <li style="margin-bottom:10px;">Turning off a division merges cases while preserving their classification</li>
+            </ul>
+            
+            <h4 style="margin-bottom:10px;">Image Size:</h4>
+            <ul style="padding-left:20px;margin-bottom:20px;">
+                <li style="margin-bottom:10px;">Controls the size of traced images in case view modals</li>
+                <li style="margin-bottom:10px;">Training modes have separate image size controls</li>
+            </ul>
+            
+            <h4 style="margin-bottom:10px;">Default Tracked Pieces:</h4>
+            <ul style="padding-left:20px;margin-bottom:20px;">
+                <li style="margin-bottom:10px;">Set which pieces are tracked by default across all cases</li>
+                <li style="margin-bottom:10px;">Individual cases can override this setting</li>
+            </ul>
+            
+            <h4 style="margin-bottom:10px;">Button Visibility:</h4>
+            <ul style="padding-left:20px;margin-bottom:20px;">
+                <li style="margin-bottom:10px;">Hide buttons you don't use to reduce clutter</li>
+                <li style="margin-bottom:10px;">Options include: Actual State, Change Tracked Pieces, Reference Scheme</li>
+            </ul>
+            
+            <h4 style="margin-bottom:10px;">Display Options:</h4>
+            <ul style="padding-left:20px;">
+                <li style="margin-bottom:10px;"><strong>Swap Algorithm Display:</strong> Switch which algorithm appears larger (input vs normalized)</li>
+                <li style="margin-bottom:10px;"><strong>Mobile View:</strong> Enable vertical layout for better mobile experience</li>
+                <li style="margin-bottom:10px;"><strong>Hide Override Tracked Pieces:</strong> Remove this option from edit modal if unused</li>
+            </ul>
+        `;
+    } else if (currentTitle === 'Training Settings') {
+        instructionContent = `
+            <h4 style="margin-bottom:10px;">Text & Image Size:</h4>
+            <ul style="padding-left:20px;margin-bottom:20px;">
+                <li style="margin-bottom:10px;">Adjust scramble text size for better readability (10-24px)</li>
+                <li style="margin-bottom:10px;">Set scramble image size to fit your screen (150-400px)</li>
+            </ul>
+            
+            <h4 style="margin-bottom:10px;">Display Options:</h4>
+            <ul style="padding-left:20px;margin-bottom:20px;">
+                <li style="margin-bottom:10px;"><strong>Show Case Name:</strong> Display which case you're solving</li>
+                <li style="margin-bottom:10px;"><strong>Show Parity:</strong> Display whether it's odd/even parity (if division enabled)</li>
+                <li style="margin-bottom:10px;"><strong>Show Orientation:</strong> Display whether it's original/mirror (if division enabled)</li>
+            </ul>
+            
+            <h4 style="margin-bottom:10px;">Randomization:</h4>
+            <ul style="padding-left:20px;margin-bottom:20px;">
+                <li style="margin-bottom:10px;"><strong>Lock Orientation:</strong> Always generate scrambles in the same orientation</li>
+                <li style="margin-bottom:10px;"><strong>Allow Mirror:</strong> Randomly mirror scrambles (only if orientation unlocked)</li>
+            </ul>
+            
+            <h4 style="margin-bottom:10px;">Timer Options:</h4>
+            <ul style="padding-left:20px;">
+                <li style="margin-bottom:10px;"><strong>Turn Off Starting Cue:</strong> Remove the 0.3s hold requirement to start timer</li>
+                <li style="margin-bottom:10px;">When off, timer starts immediately on release</li>
+            </ul>
+        `;
+    } else if (currentTitle === 'Memo Marathon Settings') {
+        instructionContent = `
+            <h4 style="margin-bottom:10px;">Image Size:</h4>
+            <ul style="padding-left:20px;margin-bottom:20px;">
+                <li style="margin-bottom:10px;">Adjust the size of the cube visualization (150-400px)</li>
+                <li style="margin-bottom:10px;">Larger sizes are better for seeing piece details</li>
+            </ul>
+            
+            <h4 style="margin-bottom:10px;">Randomization:</h4>
+            <ul style="padding-left:20px;margin-bottom:20px;">
+                <li style="margin-bottom:10px;"><strong>Lock Orientation:</strong> Always generate scrambles in the same orientation</li>
+                <li style="margin-bottom:10px;"><strong>Allow Mirror:</strong> Randomly mirror scrambles (only if orientation unlocked)</li>
+            </ul>
+            
+            <h4 style="margin-bottom:10px;">Vertical Mode:</h4>
+            <ul style="padding-left:20px;margin-bottom:20px;">
+                <li style="margin-bottom:10px;">Stack the two cube layers vertically instead of horizontally</li>
+                <li style="margin-bottom:10px;">Better for mobile devices or smaller screens</li>
+            </ul>
+            
+            <h4 style="margin-bottom:10px;">Piece Order:</h4>
+            <ul style="padding-left:20px;">
+                <li style="margin-bottom:10px;">Click pieces on the (0,0) visualization in your desired memorization order</li>
+                <li style="margin-bottom:10px;">The app will expect you to click pieces in this order during training</li>
+                <li style="margin-bottom:10px;">Preview shows your current selection before applying</li>
+                <li style="margin-bottom:10px;">You can configure any order that works for your memorization system</li>
+            </ul>
+        `;
+    }
+
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:500px;max-height:80vh;margin:auto;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">
+            <div class="modal-header">
+                <h3>${currentTitle} Instructions</h3>
+                <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
+            </div>
+            <div class="modal-body" style="line-height:1.8;overflow-y:auto;flex:1;">
+                ${instructionContent}
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
 }

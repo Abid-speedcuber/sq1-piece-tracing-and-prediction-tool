@@ -163,7 +163,17 @@ function openMemoTrainingModal() {
         }
     });
     document.getElementById('memoSettingsBtn').addEventListener('click', () => openSettingsModal('memo'));
-    document.getElementById('memoCloseBtn').addEventListener('click', () => modal.remove());
+    document.getElementById('memoCloseBtn').addEventListener('click', () => {
+        // Reset training state when closing modal
+        if (memoTrainingState.isActive) {
+            memoTrainingState.isActive = false;
+            if (memoTrainingState.timerInterval) {
+                clearInterval(memoTrainingState.timerInterval);
+                memoTrainingState.timerInterval = null;
+            }
+        }
+        modal.remove();
+    });
 
     updateSelectedCasesInfo();
     

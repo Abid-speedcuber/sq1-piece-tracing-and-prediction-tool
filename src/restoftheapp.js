@@ -348,6 +348,13 @@ function renderCards(searchQuery = '') {
     }
 }
 
+// Add a global function to refresh home screen after label toggle
+window.refreshHomeScreen = function() {
+    const searchInput = document.getElementById('cardSearchInput');
+    const searchQuery = searchInput ? searchInput.value : '';
+    renderCards(searchQuery);
+};
+
 // Setup search functionality
 document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('cardSearchInput');

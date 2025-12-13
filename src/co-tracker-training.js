@@ -585,6 +585,7 @@ function openTrainingSettingsModal() {
 
 function updateTrainingTextSize(size) {
     trainingSettings.scrambleTextSize = size;
+    window.trainingSettings.scrambleTextSize = size;
     saveTrainingSettings();
     const textEl = document.getElementById('trainingScrambleText');
     if (textEl) {
@@ -594,6 +595,7 @@ function updateTrainingTextSize(size) {
 
 function updateTrainingImageSize(size) {
     trainingSettings.scrambleImageSize = size;
+    window.trainingSettings.scrambleImageSize = size;
     saveTrainingSettings();
     
     // Store peek state
@@ -650,6 +652,8 @@ function updateTrainingColor(colorKey, value) {
         };
     }
     trainingSettings.colorScheme[colorKey] = value;
+    if (!window.trainingSettings.colorScheme) window.trainingSettings.colorScheme = {};
+    window.trainingSettings.colorScheme[colorKey] = value;
     saveTrainingSettings();
     // Regenerate current scramble with new colors
     if (trainingCurrentHistoryIndex >= 0 && trainingScrambleHistory[trainingCurrentHistoryIndex]) {
@@ -665,6 +669,7 @@ function updateTrainingColor(colorKey, value) {
 
 function updateTrainingDisplayOption(option, value) {
     trainingSettings[option] = value;
+    window.trainingSettings[option] = value;
     saveTrainingSettings();
     
     // Update title if training modal is open
@@ -676,6 +681,7 @@ function updateTrainingDisplayOption(option, value) {
 
 function updateTrainingLockOrientation(value) {
     trainingSettings.lockOrientation = value;
+    window.trainingSettings.lockOrientation = value;
     saveTrainingSettings();
     
     // Show/hide the allow mirror option
@@ -687,11 +693,13 @@ function updateTrainingLockOrientation(value) {
 
 function updateTrainingAllowMirror(value) {
     trainingSettings.allowMirror = value;
+    window.trainingSettings.allowMirror = value;
     saveTrainingSettings();
 }
 
 function updateTrainingDisableStartCue(value) {
     trainingSettings.disableStartCue = value;
+    window.trainingSettings.disableStartCue = value;
     saveTrainingSettings();
 }
 
