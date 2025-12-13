@@ -844,19 +844,19 @@ function openPersonalizationModal() {
 }
 
 function exportData() {
-    // Include training settings from localStorage
+    // Include ALL settings from localStorage
     const exportData = {
         ...STATE,
         trainingSettings: loadTrainingSettings(),
         memoTrainingSettings: JSON.parse(localStorage.getItem('sq1MemoTrainingSettings') || '{}'),
-        memoSelectedCases: JSON.parse(localStorage.getItem('sq1MemoSelectedCases') || '[]')
+        memoSelectedCases: JSON.parse(localStorage.getItem('sq1MemoSelectedCases') || '[]'),
+        trainingSelectedCases: JSON.parse(localStorage.getItem('sq1TrainingSelectedCases') || '[]')
     };
     
     const dataStr = JSON.stringify(exportData, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
     a.download = 'sq1-co-tracker-data.json';
     a.click();
 }
@@ -870,7 +870,7 @@ function importData(input) {
         try {
             const imported = JSON.parse(e.target.result);
             
-            // Import training settings if present
+            // Import ALL training settings if present
             if (imported.trainingSettings) {
                 localStorage.setItem('sq1TrainingSettings', JSON.stringify(imported.trainingSettings));
                 delete imported.trainingSettings;
@@ -886,41 +886,9 @@ function importData(input) {
                 delete imported.memoSelectedCases;
             }
             
-            // Import main state
-            Object.assign(STATE, imported);
-            saveState();
-            renderCards();
-            showConfirmModal('Import Success', 'Data imported successfully!', () => { });
-        } catch (err) {
-            showConfirmModal('Import Error', 'Error importing data: ' + err.message, () => { });
-        }
-    };
-    reader.readAsText(file);
-}
-
-function importData(input) {
-    const file = input.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        try {
-            const imported = JSON.parse(e.target.result);
-            
-            // Import training settings if present
-            if (imported.trainingSettings) {
-                localStorage.setItem('sq1TrainingSettings', JSON.stringify(imported.trainingSettings));
-                delete imported.trainingSettings;
-            }
-            
-            if (imported.memoTrainingSettings) {
-                localStorage.setItem('sq1MemoTrainingSettings', JSON.stringify(imported.memoTrainingSettings));
-                delete imported.memoTrainingSettings;
-            }
-            
-            if (imported.memoSelectedCases) {
-                localStorage.setItem('sq1MemoSelectedCases', JSON.stringify(imported.memoSelectedCases));
-                delete imported.memoSelectedCases;
+            if (imported.trainingSelectedCases) {
+                localStorage.setItem('sq1TrainingSelectedCases', JSON.stringify(imported.trainingSelectedCases));
+                delete imported.trainingSelectedCases;
             }
             
             // Import main state
