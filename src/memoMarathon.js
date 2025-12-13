@@ -809,14 +809,13 @@ function generateMemoVisualization() {
         wrapper.style.webkitTouchCallout = 'none';
         wrapper.style.userSelect = 'none';
         
+        // Set wrapper innerHTML first
+        wrapper.innerHTML = baseImage;
+        
         // Apply vertical mode if enabled
         if (memoTrainingSettings.enableVerticalMode) {
-            // Parse the baseImage HTML to modify it
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = baseImage;
-            
-            // Find the container div with "display: flex"
-            const flexContainer = tempDiv.querySelector('div[style*="display: flex"]');
+            // Find the container div with "display: flex" in the wrapper
+            const flexContainer = wrapper.querySelector('div[style*="display: flex"]');
             if (flexContainer) {
                 // Change to vertical layout
                 const currentStyle = flexContainer.getAttribute('style');
@@ -833,10 +832,6 @@ function generateMemoVisualization() {
                     }
                 });
             }
-            
-            wrapper.innerHTML = tempDiv.innerHTML;
-        } else {
-            wrapper.innerHTML = baseImage;
         }
         
         // Add invisible hitbox overlay on top
@@ -851,14 +846,13 @@ function generateMemoVisualization() {
         overlayDiv.style.webkitTouchCallout = 'none';
         overlayDiv.style.userSelect = 'none';
         
+        // Set overlayDiv innerHTML first
+        overlayDiv.innerHTML = hitboxOverlay;
+        
         // Apply vertical mode if enabled
         if (memoTrainingSettings.enableVerticalMode) {
-            // Parse the hitboxOverlay HTML to modify it
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = hitboxOverlay;
-            
-            // Find the container div with "display: flex"
-            const flexContainer = tempDiv.querySelector('div[style*="display: flex"]');
+            // Find the container div with "display: flex" in the overlayDiv
+            const flexContainer = overlayDiv.querySelector('div[style*="display: flex"]');
             if (flexContainer) {
                 // Change to vertical layout
                 const currentStyle = flexContainer.getAttribute('style');
@@ -875,10 +869,6 @@ function generateMemoVisualization() {
                     }
                 });
             }
-            
-            overlayDiv.innerHTML = tempDiv.innerHTML;
-        } else {
-            overlayDiv.innerHTML = hitboxOverlay;
         }
         
         // Apply styles to all SVG elements to prevent tap highlights

@@ -82,7 +82,7 @@ function openSettingsModal(context = 'sidebar') {
                     <div class="settings-group">
                         <label class="settings-label">
                             <input type="checkbox" ${STATE.settings.personalization.hideInstructions ? 'checked' : ''} 
-                                   onchange="STATE.settings.personalization.hideInstructions = this.checked; saveState(); updateTopbar(); renderCards();" 
+                                   onchange="STATE.settings.personalization.hideInstructions = this.checked; saveState(); updateTopbar(); renderCards(); updateSettingsInstructionButton();" 
                                    style="margin-right:5px;">
                             Hide Instruction Buttons
                         </label>
@@ -1224,52 +1224,19 @@ function updateGlobalDivisionSetting(setting, value) {
     
     saveState();
     
-    // Live update: Re-render any open card modal
-    const openModal = document.querySelector('.modal-content');
+    // Hard rerender: Close and reopen the card modal if it's open
+    const openModal = document.querySelector('.modal');
     if (openModal && openModal.querySelector('[id^="cases-container-"]')) {
         const containerId = openModal.querySelector('[id^="cases-container-"]').id;
         const cardIdx = parseInt(containerId.split('-')[2]);
         if (!isNaN(cardIdx)) {
-            // Force re-render the entire case modal content including radio buttons
-            const modalBody = openModal.querySelector('.modal-body');
-            if (modalBody) {
-                const card = STATE.cards[cardIdx];
-                const paritySection = (STATE.settings.divisionSettings?.byParity !== false) ? `<div style="display:flex;align-items:center;gap:15px;">
-                        <label style="font-weight:600;">Parity:</label>
-                        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
-                            <input type="radio" name="parity-${cardIdx}" value="odd" ${card.viewState.parity === 'odd' ? 'checked' : ''} onchange="updateCardView(${cardIdx}, 'parity', 'odd')">
-                            <span>Odd</span>
-                        </label>
-                        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
-                            <input type="radio" name="parity-${cardIdx}" value="even" ${card.viewState.parity === 'even' ? 'checked' : ''} onchange="updateCardView(${cardIdx}, 'parity', 'even')">
-                            <span>Even</span>
-                        </label>
-                    </div>` : '';
-                
-                const orientationSection = (STATE.settings.divisionSettings?.byOrientation !== false) ? `<div style="display:flex;align-items:center;gap:15px;">
-                        <label style="font-weight:600;">Orientation:</label>
-                        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
-                            <input type="radio" name="orientation-${cardIdx}" value="original" ${card.viewState.orientation === 'original' ? 'checked' : ''} onchange="updateCardView(${cardIdx}, 'orientation', 'original')">
-                            <span>Original</span>
-                        </label>
-                        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
-                            <input type="radio" name="orientation-${cardIdx}" value="mirror" ${card.viewState.orientation === 'mirror' ? 'checked' : ''} onchange="updateCardView(${cardIdx}, 'orientation', 'mirror')">
-                            <span>Mirror</span>
-                        </label>
-                    </div>` : '';
-                
-                const controlsSection = modalBody.querySelector('div[style*="display:flex;gap:40px"]');
-                if (controlsSection) {
-                    controlsSection.innerHTML = `
-                        ${paritySection}
-                        ${orientationSection}
-                        <button class="btn btn-primary" onclick="addCase(${cardIdx})" style="margin-left:auto;padding:8px 16px;">
-                            + Add Case
-                        </button>
-                    `;
-                }
-            }
-            renderCases(cardIdx);
+            // Close the current modal
+            openModal.remove();
+            
+            // Reopen it after a brief delay to ensure clean render
+            setTimeout(() => {
+                openCardModal(cardIdx);
+            }, 50);
         }
     }
 }
@@ -1443,4 +1410,11 @@ function openSettingsTabInstructionModal() {
 
     document.body.appendChild(modal);
     modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+}
+
+function updateSettingsInstructionButton() {
+    const instructionBtn = document.querySelector('.modal-header button[onclick="openSettingsTabInstructionModal()"]');
+    if (instructionBtn) {
+        instructionBtn.style.display = STATE.settings.personalization.hideInstructions ? 'none' : 'flex';
+    }
 }
