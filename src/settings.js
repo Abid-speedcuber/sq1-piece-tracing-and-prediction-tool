@@ -1224,19 +1224,33 @@ function updateGlobalDivisionSetting(setting, value) {
     
     saveState();
     
-    // Hard rerender: Close and reopen the card modal if it's open
+    // Live update if card modal is open
     const openModal = document.querySelector('.modal');
     if (openModal && openModal.querySelector('[id^="cases-container-"]')) {
         const containerId = openModal.querySelector('[id^="cases-container-"]').id;
         const cardIdx = parseInt(containerId.split('-')[2]);
         if (!isNaN(cardIdx)) {
-            // Close the current modal
-            openModal.remove();
+            // Update the radio buttons visibility in the modal header
+            const modalBody = openModal.querySelector('.modal-body');
+            if (modalBody) {
+                const controlsDiv = modalBody.querySelector('div[style*="display:flex"][style*="gap:40px"]');
+                if (controlsDiv) {
+                    // Update parity controls
+                    const parityDiv = controlsDiv.querySelector('div:has(input[name^="parity-"])');
+                    if (parityDiv) {
+                        parityDiv.style.display = STATE.settings.divisionSettings?.byParity !== false ? 'flex' : 'none';
+                    }
+                    
+                    // Update orientation controls
+                    const orientationDiv = controlsDiv.querySelector('div:has(input[name^="orientation-"])');
+                    if (orientationDiv) {
+                        orientationDiv.style.display = STATE.settings.divisionSettings?.byOrientation !== false ? 'flex' : 'none';
+                    }
+                }
+            }
             
-            // Reopen it after a brief delay to ensure clean render
-            setTimeout(() => {
-                openCardModal(cardIdx);
-            }, 50);
+            // Re-render cases with new division settings
+            renderCases(cardIdx);
         }
     }
 }

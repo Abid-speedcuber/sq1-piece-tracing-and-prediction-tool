@@ -682,6 +682,8 @@ function updateTopbar() {
             instructionBtn.onclick = openHomeInstructionModal;
             if (STATE.settings.personalization && STATE.settings.personalization.hideInstructions) {
                 instructionBtn.style.display = 'none';
+            } else {
+                instructionBtn.style.display = 'flex';
             }
         }
     }
