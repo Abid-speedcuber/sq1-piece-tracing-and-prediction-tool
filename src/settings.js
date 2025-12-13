@@ -1,5 +1,11 @@
 function openSettingsModal(context = 'sidebar') {
     // context can be: 'sidebar', 'card', 'training', 'memo'
+    // Hide sidebar when opening settings
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        sidebar.classList.remove('open');
+    }
+    
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.display = 'block';
@@ -112,6 +118,14 @@ function openSettingsModal(context = 'sidebar') {
                             Hide Search Bar on Home Screen
                         </label>
                     </div>
+                    <div class="settings-group">
+                        <label class="settings-label">
+                            <input type="checkbox" ${STATE.settings.personalization.showTrainButtonHome ? 'checked' : ''} 
+                                   onchange="STATE.settings.personalization.showTrainButtonHome = this.checked; saveState(); updateTopbar();" 
+                                   style="margin-right:5px;">
+                            Show Train Button on Home Screen
+                        </label>
+                    </div>
                 `;
             case 'case':
                 return `
@@ -190,9 +204,17 @@ function openSettingsModal(context = 'sidebar') {
                     <div class="settings-group">
                         <label class="settings-label">
                             <input type="checkbox" ${STATE.settings.personalization.hideOverrideTrackedPieces ? 'checked' : ''} 
-                                   onchange="STATE.settings.personalization.hideOverrideTrackedPieces = this.checked; saveState();" 
+                                   onchange="STATE.settings.personalization.hideOverrideTrackedPieces = this.checked; saveState(); liveUpdateCaseModal();" 
                                    style="margin-right:5px;">
                             Hide Override Tracked Pieces in Edit Modal
+                        </label>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">
+                            <input type="checkbox" ${STATE.settings.personalization.showTrainButtonCase ? 'checked' : ''} 
+                                   onchange="STATE.settings.personalization.showTrainButtonCase = this.checked; saveState(); liveUpdateCaseModalTopbar();" 
+                                   style="margin-right:5px;">
+                            Show Train Button on Case Screen
                         </label>
                     </div>
                 `;
@@ -790,13 +812,21 @@ function openPersonalizationModal() {
                     </label>
                 </div>
                 <div class="settings-group">
-                    <label class="settings-label">
-                        <input type="checkbox" ${STATE.settings.personalization.hideOverrideTrackedPieces ? 'checked' : ''} 
-                               onchange="STATE.settings.personalization.hideOverrideTrackedPieces = this.checked; saveState();" 
-                               style="margin-right:5px;">
-                        Hide Override Tracked Pieces in Edit Modal
-                    </label>
-                </div>
+                        <label class="settings-label">
+                            <input type="checkbox" ${STATE.settings.personalization.hideOverrideTrackedPieces ? 'checked' : ''} 
+                                   onchange="STATE.settings.personalization.hideOverrideTrackedPieces = this.checked; saveState(); liveUpdateCaseModal();" 
+                                   style="margin-right:5px;">
+                            Hide Override Tracked Pieces in Edit Modal
+                        </label>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">
+                            <input type="checkbox" ${STATE.settings.personalization.showTrainButtonCase ? 'checked' : ''} 
+                                   onchange="STATE.settings.personalization.showTrainButtonCase = this.checked; saveState(); liveUpdateCaseModalTopbar();" 
+                                   style="margin-right:5px;">
+                            Show Train Button on Case Screen
+                        </label>
+                    </div>
                 <div class="settings-group">
                     <label class="settings-label">
                         <input type="checkbox" ${STATE.settings.personalization.hideInstructions ? 'checked' : ''} 

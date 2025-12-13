@@ -23,9 +23,27 @@ function openCardModal(cardIdx) {
         <img src="res/white-instruction.svg" style="width:12px;height:12px;">
     </button>` : ''}
 </div>
-<div style="display:flex;gap:10px;">
+<div style="display:flex;gap:10px;" id="caseModalTopbarRight-${cardIdx}">
+    ${STATE.settings.personalization.showTrainButtonCase ? `
+    <div style="position:relative;">
+        <button class="btn" id="caseTrainBtn-${cardIdx}" title="Training" style="padding:8px 16px;display:flex;align-items:center;gap:6px;background:#555;color:#fff;border:1px solid #666;">
+            <img src="res/training.svg" alt="Training" style="width:16px;height:16px;filter:brightness(0) invert(1);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;margin-left:2px;">
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+        </button>
+        <div id="caseTrainDropdown-${cardIdx}" style="display:none;position:absolute;top:100%;right:0;margin-top:5px;background:#fff;border:1px solid #ddd;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.15);min-width:180px;z-index:1000;">
+            <div onclick="openCOTrackerTrainingModal(); document.getElementById('caseTrainDropdown-${cardIdx}').style.display='none';" style="padding:12px 16px;cursor:pointer;border-bottom:1px solid #eee;color:#333;">
+                <span style="font-size:14px;">Random Scramble</span>
+            </div>
+            <div onclick="openMemoTrainingModal(); document.getElementById('caseTrainDropdown-${cardIdx}').style.display='none';" style="padding:12px 16px;cursor:pointer;color:#333;">
+                <span style="font-size:14px;">Memo Test</span>
+            </div>
+        </div>
+    </div>
+    ` : ''}
     <button class="icon-btn" onclick="openSettingsModal('card')" title="Settings" style="width:32px;height:32px;background:#555;">
-        <img src="res/settings.svg" style="width:16px;height:16px;">
+        <img src="res/trainingSettings.svg" style="width:16px;height:16px;">
     </button>
     <button class="close-btn" onclick="this.closest('.modal').remove()" style="color:#fff;">×</button>
 </div>
@@ -64,6 +82,36 @@ function openCardModal(cardIdx) {
     `;
 
     document.body.appendChild(modal);
+    
+    // Setup case training dropdown if enabled
+    if (STATE.settings.personalization.showTrainButtonCase) {
+        const caseTrainBtn = document.getElementById(`caseTrainBtn-${cardIdx}`);
+        const caseTrainDropdown = document.getElementById(`caseTrainDropdown-${cardIdx}`);
+        
+        if (caseTrainBtn && caseTrainDropdown) {
+            caseTrainBtn.onclick = (e) => {
+                e.stopPropagation();
+                const isVisible = caseTrainDropdown.style.display === 'block';
+                caseTrainDropdown.style.display = isVisible ? 'none' : 'block';
+            };
+            
+            // Close dropdown when clicking outside
+            const closeDropdown = (e) => {
+                if (!caseTrainBtn.contains(e.target) && !caseTrainDropdown.contains(e.target)) {
+                    caseTrainDropdown.style.display = 'none';
+                }
+            };
+            document.addEventListener('click', closeDropdown);
+            
+            // Hover effects for dropdown items
+            const dropdownItems = caseTrainDropdown.querySelectorAll('div[onclick]');
+            dropdownItems.forEach(item => {
+                item.onmouseenter = () => item.style.background = '#f5f5f5';
+                item.onmouseleave = () => item.style.background = 'transparent';
+            });
+        }
+    }
+    
     renderCases(cardIdx);
 
     modal.onclick = (e) => {
@@ -1162,4 +1210,71 @@ function updateCaseInputType(cardIdx, caseIdx, type) {
     caseItem.inputType = type;
     saveState();
     renderCases(cardIdx);
+}
+
+function liveUpdateCaseModalTopbar() {
+    // Find all open case modals and update their topbar
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        const topbarRightContainer = modal.querySelector('[id^="caseModalTopbarRight-"]');
+        if (topbarRightContainer) {
+            const idMatch = topbarRightContainer.id.match(/caseModalTopbarRight-(\d+)/);
+            if (idMatch) {
+                const cardIdx = parseInt(idMatch[1]);
+                const showTrainButton = STATE.settings.personalization.showTrainButtonCase;
+                
+                topbarRightContainer.innerHTML = `
+                    ${showTrainButton ? `
+                    <div style="position:relative;">
+                        <button class="btn" id="caseTrainBtn-${cardIdx}" title="Training" style="padding:8px 16px;display:flex;align-items:center;gap:6px;background:#555;color:#fff;border:1px solid #666;">
+                            <img src="res/training.svg" alt="Training" style="width:16px;height:16px;filter:brightness(0) invert(1);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;margin-left:2px;">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                        <div id="caseTrainDropdown-${cardIdx}" style="display:none;position:absolute;top:100%;right:0;margin-top:5px;background:#fff;border:1px solid #ddd;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.15);min-width:180px;z-index:1000;">
+                            <div onclick="openCOTrackerTrainingModal(); document.getElementById('caseTrainDropdown-${cardIdx}').style.display='none';" style="padding:12px 16px;cursor:pointer;border-bottom:1px solid #eee;color:#333;">
+                                <span style="font-size:14px;">Random Scramble</span>
+                            </div>
+                            <div onclick="openMemoTrainingModal(); document.getElementById('caseTrainDropdown-${cardIdx}').style.display='none';" style="padding:12px 16px;cursor:pointer;color:#333;">
+                                <span style="font-size:14px;">Memo Test</span>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+                    <button class="icon-btn" onclick="openSettingsModal('card')" title="Settings" style="width:32px;height:32px;background:#555;">
+                        <img src="res/trainingSettings.svg" style="width:16px;height:16px;">
+                    </button>
+                    <button class="close-btn" onclick="this.closest('.modal').remove()" style="color:#fff;">×</button>
+                `;
+                
+                // Re-setup dropdown if it's now visible
+                if (showTrainButton) {
+                    const caseTrainBtn = document.getElementById(`caseTrainBtn-${cardIdx}`);
+                    const caseTrainDropdown = document.getElementById(`caseTrainDropdown-${cardIdx}`);
+                    
+                    if (caseTrainBtn && caseTrainDropdown) {
+                        caseTrainBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            const isVisible = caseTrainDropdown.style.display === 'block';
+                            caseTrainDropdown.style.display = isVisible ? 'none' : 'block';
+                        };
+                        
+                        const closeDropdown = (e) => {
+                            if (!caseTrainBtn.contains(e.target) && !caseTrainDropdown.contains(e.target)) {
+                                caseTrainDropdown.style.display = 'none';
+                            }
+                        };
+                        document.addEventListener('click', closeDropdown);
+                        
+                        const dropdownItems = caseTrainDropdown.querySelectorAll('div[onclick]');
+                        dropdownItems.forEach(item => {
+                            item.onmouseenter = () => item.style.background = '#f5f5f5';
+                            item.onmouseleave = () => item.style.background = 'transparent';
+                        });
+                    }
+                }
+            }
+        }
+    });
 }

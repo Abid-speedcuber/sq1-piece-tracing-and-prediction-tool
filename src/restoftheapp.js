@@ -149,12 +149,21 @@ function loadState() {
                 hideSearchBar: false,
                 hideOverrideTrackedPieces: true,
                 cardScale: 1,
-                hideInstructions: false
+                hideInstructions: false,
+                showTrainButtonHome: false,
+                showTrainButtonCase: false
             };
         }
         // Ensure hideInstructions exists for existing users
         if (STATE.settings.personalization.hideInstructions === undefined) {
             STATE.settings.personalization.hideInstructions = false;
+        }
+        // Ensure training button toggles exist for existing users
+        if (STATE.settings.personalization.showTrainButtonHome === undefined) {
+            STATE.settings.personalization.showTrainButtonHome = false;
+        }
+        if (STATE.settings.personalization.showTrainButtonCase === undefined) {
+            STATE.settings.personalization.showTrainButtonCase = false;
         }
     }
 }
@@ -650,7 +659,27 @@ function updateTopbar() {
             renderCards();
         };
     } else {
+        const showTrainButton = STATE.settings.personalization.showTrainButtonHome;
+        
         topbarRight.innerHTML = `
+                    ${showTrainButton ? `
+                    <div style="position:relative;">
+                        <button class="btn" id="homeTrainBtn" title="Training" style="padding:8px 16px;display:flex;align-items:center;gap:6px;">
+                            <img src="res/training.svg" alt="Training" style="width:16px;height:16px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;margin-left:2px;">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                        <div id="homeTrainDropdown" style="display:none;position:absolute;top:100%;right:0;margin-top:5px;background:#fff;border:1px solid #ddd;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.15);min-width:180px;z-index:1000;">
+                            <div onclick="openCOTrackerTrainingModal(); document.getElementById('homeTrainDropdown').style.display='none';" style="padding:12px 16px;cursor:pointer;border-bottom:1px solid #eee;">
+                                <span style="font-size:14px;">Random Scramble</span>
+                            </div>
+                            <div onclick="openMemoTrainingModal(); document.getElementById('homeTrainDropdown').style.display='none';" style="padding:12px 16px;cursor:pointer;">
+                                <span style="font-size:14px;">Memo Test</span>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
                     <button class="btn" id="addCardBtn" title="Add Case" style="padding:8px 16px;display:flex;align-items:center;gap:6px;">
                         <img src="res/plus.svg" alt="Add" style="width:16px;height:16px;">
                         <span>Add CS</span>
@@ -662,6 +691,34 @@ function updateTopbar() {
         
         // Setup sidebar after creating buttons
         setTimeout(() => setupSidebar(), 0);
+
+        // Setup home training dropdown
+        if (showTrainButton) {
+            const homeTrainBtn = document.getElementById('homeTrainBtn');
+            const homeTrainDropdown = document.getElementById('homeTrainDropdown');
+            
+            if (homeTrainBtn && homeTrainDropdown) {
+                homeTrainBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    const isVisible = homeTrainDropdown.style.display === 'block';
+                    homeTrainDropdown.style.display = isVisible ? 'none' : 'block';
+                };
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!homeTrainBtn.contains(e.target) && !homeTrainDropdown.contains(e.target)) {
+                        homeTrainDropdown.style.display = 'none';
+                    }
+                });
+                
+                // Hover effects for dropdown items
+                const dropdownItems = homeTrainDropdown.querySelectorAll('div[onclick]');
+                dropdownItems.forEach(item => {
+                    item.onmouseenter = () => item.style.background = '#f5f5f5';
+                    item.onmouseleave = () => item.style.background = 'transparent';
+                });
+            }
+        }
 
         const addCardBtn = document.getElementById('addCardBtn');
         if (addCardBtn) {
