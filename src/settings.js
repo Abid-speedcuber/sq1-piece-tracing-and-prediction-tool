@@ -490,9 +490,9 @@ function openSettingsModal(context = 'sidebar') {
             <div class="modal-header">
                 <div style="display:flex;align-items:center;gap:10px;">
                     <h3 id="settingsModalTitle">Settings</h3>
-                    ${!STATE.settings.personalization.hideInstructions ? `<button class="icon-btn" onclick="openSettingsTabInstructionModal()" title="Help" style="width:24px;height:24px;background:#555;">
+                    <button class="icon-btn" onclick="openSettingsTabInstructionModal()" title="Help" style="width:24px;height:24px;background:#555;display:${STATE.settings.personalization.hideInstructions ? 'none' : 'flex'};">
                         <img src="res/white-instruction.svg" style="width:12px;height:12px;">
-                    </button>` : ''}
+                    </button>
                 </div>
                 <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
             </div>
