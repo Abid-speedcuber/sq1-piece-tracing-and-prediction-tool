@@ -130,7 +130,7 @@ function openSettingsModal(context = 'sidebar') {
             case 'case':
                 return `
                     <div class="settings-group">
-                        <label class="settings-label" style="font-weight:600;font-size:15px;margin-bottom:10px;">CS Case Division</label>
+                        <label class="settings-label" style="font-weight:600;font-size:15px;margin-bottom:10px;">CS Case Division (beta)</label>
                         <div style="display:flex;flex-direction:column;gap:10px;padding:10px;background:#f5f5f5;border-radius:4px;">
                             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
                                 <input type="checkbox" ${STATE.settings.divisionSettings?.byParity !== false ? 'checked' : ''} 
@@ -152,7 +152,7 @@ function openSettingsModal(context = 'sidebar') {
                     <div class="settings-group">
                         <label class="settings-label">Image Size</label>
                         <div style="display:flex;align-items:center;gap:10px;">
-                            <input type="range" min="100" max="400" value="${STATE.settings.imageSize}" 
+                            <input type="range" min="100" max="700" value="${STATE.settings.imageSize}" 
                                    oninput="this.nextElementSibling.textContent = this.value + 'px'; STATE.settings.imageSize = parseInt(this.value); saveState(); liveUpdateCaseModal();"
                                    style="flex:1;">
                             <span style="min-width:60px;text-align:right;">${STATE.settings.imageSize}px</span>
@@ -198,7 +198,7 @@ function openSettingsModal(context = 'sidebar') {
                             <input type="checkbox" ${STATE.settings.personalization.enableMobileView ? 'checked' : ''} 
                                    onchange="STATE.settings.personalization.enableMobileView = this.checked; saveState(); liveUpdateCaseModal();" 
                                    style="margin-right:5px;">
-                            Enable Mobile View (Vertical Layout)
+                            Enable Vertical Layout (beta)
                         </label>
                     </div>
                     <div class="settings-group">
@@ -246,7 +246,7 @@ function openSettingsModal(context = 'sidebar') {
             <div class="settings-group">
                 <label class="settings-label">Scramble Image Size</label>
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <input type="range" min="150" max="400" value="${window.trainingSettings.scrambleImageSize}" 
+                    <input type="range" min="150" max="700" value="${window.trainingSettings.scrambleImageSize}" 
                            oninput="updateTrainingImageSize(parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px';"
                            style="flex:1;">
                     <span style="min-width:60px;text-align:right;">${window.trainingSettings.scrambleImageSize}px</span>
@@ -280,7 +280,7 @@ function openSettingsModal(context = 'sidebar') {
                     <input type="checkbox" ${window.trainingSettings.lockOrientation ? 'checked' : ''} 
                            onchange="updateTrainingLockOrientation(this.checked)"
                            style="margin-right:5px;">
-                    Lock Orientation
+                    Lock Orientation (beta)
                 </label>
             </div>
             <div class="settings-group" style="display:${window.trainingSettings.lockOrientation ? 'none' : 'block'};" id="allowMirrorContainer">
@@ -288,7 +288,7 @@ function openSettingsModal(context = 'sidebar') {
                     <input type="checkbox" ${window.trainingSettings.allowMirror ? 'checked' : ''} 
                            onchange="updateTrainingAllowMirror(this.checked)"
                            style="margin-right:5px;">
-                    Allow Mirror
+                    Allow Mirror (beta)
                 </label>
             </div>
             <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;margin-top:15px;">
@@ -358,7 +358,7 @@ function openSettingsModal(context = 'sidebar') {
             <div class="settings-group">
                 <label class="settings-label">Image Size</label>
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <input type="range" min="150" max="400" value="${window.memoTrainingSettings.imageSize}" 
+                    <input type="range" min="150" max="700" value="${window.memoTrainingSettings.imageSize}" 
                            oninput="updateMemoImageSize(parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px';"
                            style="flex:1;">
                     <span style="min-width:60px;text-align:right;">${window.memoTrainingSettings.imageSize}px</span>
@@ -369,7 +369,7 @@ function openSettingsModal(context = 'sidebar') {
                     <input type="checkbox" ${window.memoTrainingSettings.lockOrientation ? 'checked' : ''} 
                            onchange="updateMemoLockOrientation(this.checked)"
                            style="margin-right:5px;">
-                    Lock Orientation
+                    Lock Orientation (beta)
                 </label>
             </div>
             <div class="settings-group" style="display:${window.memoTrainingSettings.lockOrientation ? 'none' : 'block'};" id="memoAllowMirrorContainer">
@@ -377,7 +377,7 @@ function openSettingsModal(context = 'sidebar') {
                     <input type="checkbox" ${window.memoTrainingSettings.allowMirror ? 'checked' : ''} 
                            onchange="updateMemoAllowMirror(this.checked)"
                            style="margin-right:5px;">
-                    Allow Mirror
+                    Allow Mirror (beta)
                 </label>
             </div>
             <div class="settings-group">
@@ -1356,7 +1356,7 @@ function openSettingsTabInstructionModal() {
             <h4 style="margin-bottom:10px;">Text & Image Size:</h4>
             <ul style="padding-left:20px;margin-bottom:20px;">
                 <li style="margin-bottom:10px;">Adjust scramble text size for better readability (10-24px)</li>
-                <li style="margin-bottom:10px;">Set scramble image size to fit your screen (150-400px)</li>
+                <li style="margin-bottom:10px;">Set scramble image size to fit your screen</li>
             </ul>
             
             <h4 style="margin-bottom:10px;">Display Options:</h4>
@@ -1382,7 +1382,7 @@ function openSettingsTabInstructionModal() {
         instructionContent = `
             <h4 style="margin-bottom:10px;">Image Size:</h4>
             <ul style="padding-left:20px;margin-bottom:20px;">
-                <li style="margin-bottom:10px;">Adjust the size of the cube visualization (150-400px)</li>
+                <li style="margin-bottom:10px;">Adjust the size of the cube visualization</li>
                 <li style="margin-bottom:10px;">Larger sizes are better for seeing piece details</li>
             </ul>
             
