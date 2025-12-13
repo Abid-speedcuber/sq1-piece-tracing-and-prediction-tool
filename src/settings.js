@@ -8,7 +8,7 @@ function openSettingsModal(context = 'sidebar') {
     const tabs = {
         overall: { enabled: true, id: 'overall', icon: 'settings-overall' },
         home: { enabled: context === 'sidebar', id: 'home', icon: 'settings-home' },
-        case: { enabled: context === 'sidebar' || context === 'card', id: 'case', icon: 'settings-case' },
+        case: { enabled: context === 'sidebar' || context === 'card', id: 'case', icon: 'abid' },
         training: { enabled: context === 'training', id: 'training', icon: 'settings-training' },
         memo: { enabled: context === 'memo', id: 'memo', icon: 'settings-memo' }
     };
