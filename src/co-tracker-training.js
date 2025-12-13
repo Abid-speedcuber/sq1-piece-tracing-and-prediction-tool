@@ -839,6 +839,7 @@ function generateNextTrainingScrambleData() {
             text: scrambleText,
             image: scrambleImage,
             hex: finalHex,
+            trueHex: hexData.trueHex,
             result: {
                 ...result,
                 rblApplied: !trainingSettings.lockOrientation,
@@ -1143,17 +1144,19 @@ function startPeeking() {
             });
         }
 
-        // Use the SAME hex for both base image and labels - the current scramble hex
-        const scrambleHex = currentData.hex;
+        // Use displayHex for base image (current scramble with random pieces)
+        const displayHex = currentData.hex;
+        // Use trueHex for label overlay (original solution pieces)
+        const trueHex = currentData.trueHex || displayHex;
 
-        // Generate unlabeled image of current scramble
+        // Generate unlabeled image of current scramble (displayHex)
         const baseImage = window.Square1VisualizerLibraryWithSillyNames.visualizeFromHexCodePlease(
-            scrambleHex, trainingSettings.scrambleImageSize, colorScheme, 5, false, null
+            displayHex, trainingSettings.scrambleImageSize, colorScheme, 5, false, null
         );
 
-        // Generate label-only overlay from the SAME hex
+        // Generate label-only overlay from trueHex (solution pieces)
         const labelOverlay = window.Square1VisualizerLibraryWithSillyNames.visualizeLabelsOnlyPlease(
-            scrambleHex, trainingSettings.scrambleImageSize, 5, pieceLabels
+            trueHex, trainingSettings.scrambleImageSize, 5, pieceLabels
         );
 
         // Combine: base image with label overlay on top
