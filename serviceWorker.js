@@ -1,7 +1,4 @@
-// Service Worker for SQ1 Piece Tracing and Prediction Tool
-// Version 1.0.0
-
-const CACHE_NAME = 'oblp v-1.2.0';
+const CACHE_NAME = 'oblp v-1.2.1';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
@@ -51,16 +48,13 @@ const ASSETS_TO_CACHE = [
 
 // Install event - cache all assets
 self.addEventListener('install', (event) => {
-    console.log('[Service Worker] Installing...');
     
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then((cache) => {
-                console.log('[Service Worker] Caching app shell');
                 return cache.addAll(ASSETS_TO_CACHE);
             })
             .then(() => {
-                console.log('[Service Worker] Installation complete');
                 return self.skipWaiting(); // Activate immediately
             })
             .catch((error) => {
@@ -71,7 +65,6 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-    console.log('[Service Worker] Activating...');
     
     event.waitUntil(
         caches.keys()
@@ -79,14 +72,12 @@ self.addEventListener('activate', (event) => {
                 return Promise.all(
                     cacheNames.map((cacheName) => {
                         if (cacheName !== CACHE_NAME) {
-                            console.log('[Service Worker] Deleting old cache:', cacheName);
                             return caches.delete(cacheName);
                         }
                     })
                 );
             })
             .then(() => {
-                console.log('[Service Worker] Activation complete');
                 return self.clients.claim(); // Take control immediately
             })
     );
@@ -109,12 +100,9 @@ self.addEventListener('fetch', (event) => {
             .then((cachedResponse) => {
                 // Return cached version if available
                 if (cachedResponse) {
-                    console.log('[Service Worker] Serving from cache:', event.request.url);
                     return cachedResponse;
                 }
                 
-                // Otherwise fetch from network
-                console.log('[Service Worker] Fetching from network:', event.request.url);
                 return fetch(event.request)
                     .then((networkResponse) => {
                         // Don't cache if not a valid response
@@ -204,5 +192,3 @@ self.addEventListener('notificationclick', (event) => {
         clients.openWindow('/')
     );
 });
-
-console.log('[Service Worker] Script loaded');

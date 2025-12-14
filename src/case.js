@@ -178,7 +178,10 @@ function renderCases(cardIdx) {
         
         let columns = 1;
         
-        if (isMobileView) {
+        // Force vertical layout for very narrow screens (420px or less)
+        if (screenWidth <= 420) {
+            columns = 1;
+        } else if (isMobileView) {
             if (screenWidth < 800) {
                 columns = 1;
             } else {

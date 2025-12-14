@@ -1234,6 +1234,18 @@ function openTrainingCaseSelectionModal() {
                 
                 const selectCasesSpan = document.querySelector('[onclick="window.openTrainingCaseSelectionModalFromHeader()"]');
                 if (selectCasesSpan) selectCasesSpan.textContent = `${trainingSelectedCases.length} case(s) selected`;
+                
+                // Show timer and enable timer zone
+                const timerEl = document.getElementById('trainingTimer');
+                const timerZone = document.getElementById('trainingTimerZone');
+                if (timerEl) timerEl.style.display = 'block';
+                if (timerZone) {
+                    timerZone.style.pointerEvents = 'auto';
+                    timerZone.style.cursor = 'pointer';
+                }
+                
+                // Update peek button visibility
+                updatePeekButtonVisibility();
             } else {
                 const titleEl = document.getElementById('trainingCaseTitle');
                 if (titleEl) titleEl.textContent = getTrainingTitleText();
@@ -1241,6 +1253,18 @@ function openTrainingCaseSelectionModal() {
                 document.getElementById('trainingScrambleImage').innerHTML = '<div style="color:#999;font-size:14px;">No cases selected</div>';
                 const selectCasesSpan = document.querySelector('[onclick="window.openTrainingCaseSelectionModalFromHeader()"]');
                 if (selectCasesSpan) selectCasesSpan.textContent = '0 case(s) selected';
+                
+                // Hide timer and disable timer zone
+                const timerEl = document.getElementById('trainingTimer');
+                const timerZone = document.getElementById('trainingTimerZone');
+                if (timerEl) timerEl.style.display = 'none';
+                if (timerZone) {
+                    timerZone.style.pointerEvents = 'none';
+                    timerZone.style.cursor = 'default';
+                }
+                
+                // Update peek button visibility
+                updatePeekButtonVisibility();
             }
         }
     });
