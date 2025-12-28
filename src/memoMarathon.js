@@ -11,7 +11,9 @@ let memoTrainingSettings = {
     trainingMode: 'time-attack', // 'time-attack', 'survival', 'marathon'
     timeAttackDuration: 120, // seconds (1, 2, 3, 5, 8, or 10 minutes)
     marathonTarget: 25, // 25, 50, 75, or 100 cases
-    enableVerticalMode: false
+    enableVerticalMode: false,
+    trackLastNPieces: 16, // 0-16, how many recently clicked pieces keep their labels
+    showLabelsForSeconds: 1.0 // 0.0-5.0, only used when trackLastNPieces = 0
 };
 
 let memoCurrentScramble = '';
@@ -35,7 +37,9 @@ let memoTrainingState = {
     currentCaseIndex: 0,
     mistakesInSurvival: 0,
     caseCompleted: false,
-    inputLocked: false
+    inputLocked: false,
+    clickHistory: [], // Store recent clicks: [{polygon, textElement, timestamp}]
+    labelHideTimeout: null // Timeout for hiding label in timed mode
 };
 
 function loadMemoTrainingSettings() {
@@ -666,6 +670,13 @@ function loadNextMemoCase() {
         memoClickedPieces = [];
         memoTrainingState.caseCompleted = false;
         
+        // Reset click history for new case
+        memoTrainingState.clickHistory = [];
+        if (memoTrainingState.labelHideTimeout) {
+            clearTimeout(memoTrainingState.labelHideTimeout);
+            memoTrainingState.labelHideTimeout = null;
+        }
+        
         // Show stats box if hidden
         const statsBox = document.getElementById('memoStatsBox');
         if (statsBox) statsBox.style.display = 'block';
@@ -1095,15 +1106,71 @@ function handlePieceClick(pieceCode, textElement, polygon, hexValue) {
     // Correct piece clicked - store the hex value
     memoClickedPieces.push(hexValue.toLowerCase());
     
-    // Mark this polygon as clicked
-    polygon.dataset.clicked = 'true';    
-    // Show label by making text visible with white fill and black outline
-    if (textElement) {
+    // Handle label visibility based on settings
+    const trackN = memoTrainingSettings.trackLastNPieces;
+    
+    if (trackN === 0) {
+        // Timed mode: show label temporarily
+        // Clear any existing timeout
+        if (memoTrainingState.labelHideTimeout) {
+            clearTimeout(memoTrainingState.labelHideTimeout);
+        }
+        
+        // Hide previous temporary label if exists
+        if (memoTrainingState.clickHistory.length > 0) {
+            const prevClick = memoTrainingState.clickHistory[0];
+            prevClick.textElement.style.opacity = '0';
+            prevClick.polygon.dataset.clicked = 'false';
+        }
+        
+        // Show current label
         textElement.style.opacity = '1';
         textElement.style.fill = 'white';
         textElement.style.stroke = 'black';
         textElement.style.strokeWidth = '3';
         textElement.setAttribute('paint-order', 'stroke');
+        polygon.dataset.clicked = 'true';
+        
+        // Store in history (only one item for timed mode)
+        memoTrainingState.clickHistory = [{
+            polygon: polygon,
+            textElement: textElement,
+            timestamp: Date.now()
+        }];
+        
+        // Set timeout to hide label
+        const hideDelay = memoTrainingSettings.showLabelsForSeconds * 1000;
+        memoTrainingState.labelHideTimeout = setTimeout(() => {
+            textElement.style.opacity = '0';
+            polygon.dataset.clicked = 'false';
+            memoTrainingState.clickHistory = [];
+        }, hideDelay);
+        
+    } else {
+        // Track last N mode: keep N most recent labels visible
+        // Mark this polygon as permanently clicked
+        polygon.dataset.clicked = 'true';
+        
+        // Show label
+        textElement.style.opacity = '1';
+        textElement.style.fill = 'white';
+        textElement.style.stroke = 'black';
+        textElement.style.strokeWidth = '3';
+        textElement.setAttribute('paint-order', 'stroke');
+        
+        // Add to history
+        memoTrainingState.clickHistory.push({
+            polygon: polygon,
+            textElement: textElement,
+            timestamp: Date.now()
+        });
+        
+        // If we exceed N clicks, hide the oldest one
+        if (memoTrainingState.clickHistory.length > trackN) {
+            const oldestClick = memoTrainingState.clickHistory.shift();
+            oldestClick.textElement.style.opacity = '0';
+            oldestClick.polygon.dataset.clicked = 'false';
+        }
     }
     
     // Check if case is complete

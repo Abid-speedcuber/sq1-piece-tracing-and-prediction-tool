@@ -389,6 +389,26 @@ function openSettingsModal(context = 'sidebar') {
                 </label>
             </div>
             <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;margin-top:15px;">
+                <label class="settings-label">Track Last N Pieces</label>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                    <input type="range" min="0" max="16" value="${window.memoTrainingSettings.trackLastNPieces}" 
+                           oninput="updateMemoTrackLastN(parseInt(this.value)); this.nextElementSibling.textContent = this.value;"
+                           style="flex:1;">
+                    <span style="min-width:30px;text-align:right;">${window.memoTrainingSettings.trackLastNPieces}</span>
+                </div>
+                <p style="font-size:12px;color:#666;margin:5px 0;">Keep labels visible for the last N clicked pieces (0 = timed mode)</p>
+            </div>
+            <div class="settings-group" style="display:${window.memoTrainingSettings.trackLastNPieces === 0 ? 'block' : 'none'};" id="memoTimedLabelContainer">
+                <label class="settings-label">Show Labels For (seconds)</label>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <input type="range" min="0" max="5" step="0.1" value="${window.memoTrainingSettings.showLabelsForSeconds}" 
+                           oninput="updateMemoShowLabelsForSeconds(parseFloat(this.value)); this.nextElementSibling.textContent = this.value + 's';"
+                           style="flex:1;">
+                    <span style="min-width:40px;text-align:right;">${window.memoTrainingSettings.showLabelsForSeconds}s</span>
+                </div>
+                <p style="font-size:12px;color:#666;margin:5px 0;">Labels appear temporarily after clicking</p>
+            </div>
+            <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;margin-top:15px;">
                 <label class="settings-label">Piece Order</label>
                 <div style="padding:10px;background:#f0f0f0;border-radius:4px;font-size:13px;margin-bottom:10px;font-family:monospace;" id="memoOrderCurrentDisplay">
                     Current Order: ${window.memoTrainingSettings.pieceOrder.map(hex => translateHexToPieceCode(hex)).join(' → ')}
@@ -1262,6 +1282,126 @@ function updateMemoVerticalMode(value) {
     const trainingArea = document.getElementById('memoTrainingArea');
     if (trainingArea && trainingArea.style.display !== 'none' && typeof generateMemoVisualization === 'function') {
         generateMemoVisualization();
+    }
+}
+
+function updateMemoTrackLastN(value) {
+    if (!window.memoTrainingSettings) loadMemoTrainingSettings();
+    window.memoTrainingSettings.trackLastNPieces = value;
+    saveMemoTrainingSettings();
+    
+    // Show/hide timed label container
+    const timedContainer = document.getElementById('memoTimedLabelContainer');
+    if (timedContainer) {
+        timedContainer.style.display = value === 0 ? 'block' : 'none';
+    }
+    
+    // If training is active, apply new settings immediately
+    if (typeof memoTrainingState !== 'undefined' && memoTrainingState.isActive) {
+        // Clear existing timeout if switching from timed mode
+        if (memoTrainingState.labelHideTimeout) {
+            clearTimeout(memoTrainingState.labelHideTimeout);
+            memoTrainingState.labelHideTimeout = null;
+        }
+        
+        // Adjust visibility based on new setting
+        if (value === 0) {
+            // Switching to timed mode - hide all labels
+            memoTrainingState.clickHistory.forEach(click => {
+                click.textElement.style.opacity = '0';
+                click.polygon.dataset.clicked = 'false';
+            });
+            memoTrainingState.clickHistory = [];
+        } else {
+            // Track last N mode - keep only last N visible
+            while (memoTrainingState.clickHistory.length > value) {
+                const oldestClick = memoTrainingState.clickHistory.shift();
+                oldestClick.textElement.style.opacity = '0';
+                oldestClick.polygon.dataset.clicked = 'false';
+            }
+        }
+    }
+}
+
+function updateMemoShowLabelsForSeconds(value) {
+    if (!window.memoTrainingSettings) loadMemoTrainingSettings();
+    window.memoTrainingSettings.showLabelsForSeconds = value;
+    saveMemoTrainingSettings();
+    
+    // If in timed mode during active training, reset the current timeout with new duration
+    if (typeof memoTrainingState !== 'undefined' && memoTrainingState.isActive && window.memoTrainingSettings.trackLastNPieces === 0 && memoTrainingState.clickHistory.length > 0) {
+        if (memoTrainingState.labelHideTimeout) {
+            clearTimeout(memoTrainingState.labelHideTimeout);
+        }
+        
+        const currentClick = memoTrainingState.clickHistory[0];
+        const hideDelay = value * 1000;
+        
+        memoTrainingState.labelHideTimeout = setTimeout(() => {
+            currentClick.textElement.style.opacity = '0';
+            currentClick.polygon.dataset.clicked = 'false';
+            memoTrainingState.clickHistory = [];
+        }, hideDelay);
+    }
+}
+
+function updateMemoTrackLastN(value) {
+    if (!window.memoTrainingSettings) loadMemoTrainingSettings();
+    window.memoTrainingSettings.trackLastNPieces = value;
+    saveMemoTrainingSettings();
+    
+    // Show/hide timed label container
+    const timedContainer = document.getElementById('memoTimedLabelContainer');
+    if (timedContainer) {
+        timedContainer.style.display = value === 0 ? 'block' : 'none';
+    }
+    
+    // If training is active, apply new settings immediately
+    if (memoTrainingState.isActive) {
+        // Clear existing timeout if switching from timed mode
+        if (memoTrainingState.labelHideTimeout) {
+            clearTimeout(memoTrainingState.labelHideTimeout);
+            memoTrainingState.labelHideTimeout = null;
+        }
+        
+        // Adjust visibility based on new setting
+        if (value === 0) {
+            // Switching to timed mode - hide all labels
+            memoTrainingState.clickHistory.forEach(click => {
+                click.textElement.style.opacity = '0';
+                click.polygon.dataset.clicked = 'false';
+            });
+            memoTrainingState.clickHistory = [];
+        } else {
+            // Track last N mode - keep only last N visible
+            while (memoTrainingState.clickHistory.length > value) {
+                const oldestClick = memoTrainingState.clickHistory.shift();
+                oldestClick.textElement.style.opacity = '0';
+                oldestClick.polygon.dataset.clicked = 'false';
+            }
+        }
+    }
+}
+
+function updateMemoShowLabelsForSeconds(value) {
+    if (!window.memoTrainingSettings) loadMemoTrainingSettings();
+    window.memoTrainingSettings.showLabelsForSeconds = value;
+    saveMemoTrainingSettings();
+    
+    // If in timed mode during active training, reset the current timeout with new duration
+    if (memoTrainingState.isActive && memoTrainingSettings.trackLastNPieces === 0 && memoTrainingState.clickHistory.length > 0) {
+        if (memoTrainingState.labelHideTimeout) {
+            clearTimeout(memoTrainingState.labelHideTimeout);
+        }
+        
+        const currentClick = memoTrainingState.clickHistory[0];
+        const hideDelay = value * 1000;
+        
+        memoTrainingState.labelHideTimeout = setTimeout(() => {
+            currentClick.textElement.style.opacity = '0';
+            currentClick.polygon.dataset.clicked = 'false';
+            memoTrainingState.clickHistory = [];
+        }, hideDelay);
     }
 }
 
