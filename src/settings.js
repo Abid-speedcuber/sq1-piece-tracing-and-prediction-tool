@@ -5,11 +5,11 @@ function openSettingsModal(context = 'sidebar') {
     if (sidebar) {
         sidebar.classList.remove('open');
     }
-    
+
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.display = 'block';
-    
+
     // Determine which tabs are accessible
     const tabs = {
         overall: { enabled: true, id: 'overall', icon: 'settings-overall' },
@@ -18,7 +18,7 @@ function openSettingsModal(context = 'sidebar') {
         training: { enabled: context === 'training', id: 'training', icon: 'settings-training' },
         memo: { enabled: context === 'memo', id: 'memo', icon: 'settings-memo' }
     };
-    
+
     // Determine initial active tab based on context
     let activeTab = 'overall';
     if (context === 'card') {
@@ -28,9 +28,9 @@ function openSettingsModal(context = 'sidebar') {
     } else if (context === 'memo') {
         activeTab = 'memo';
     }
-    
+
     function renderTabContent(tabId) {
-        switch(tabId) {
+        switch (tabId) {
             case 'overall':
                 return `
                     <div class="settings-group">
@@ -100,124 +100,9 @@ function openSettingsModal(context = 'sidebar') {
                     </div>
                 `;
             case 'home':
-                return `
-                    <div class="settings-group">
-                        <label class="settings-label">Card Size Scale</label>
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <input type="range" min="0.5" max="2" step="0.1" value="${STATE.settings.personalization.cardScale || 1}" 
-                                   oninput="this.nextElementSibling.textContent = this.value + 'x'; STATE.settings.personalization.cardScale = parseFloat(this.value); saveState(); renderCards();"
-                                   style="flex:1;">
-                            <span style="min-width:60px;text-align:right;">${STATE.settings.personalization.cardScale || 1}x</span>
-                        </div>
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">
-                            <input type="checkbox" ${STATE.settings.personalization.hideSearchBar ? 'checked' : ''} 
-                                   onchange="STATE.settings.personalization.hideSearchBar = this.checked; saveState(); renderCards();" 
-                                   style="margin-right:5px;">
-                            Hide Search Bar on Home Screen
-                        </label>
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">
-                            <input type="checkbox" ${STATE.settings.personalization.showTrainButtonHome ? 'checked' : ''} 
-                                   onchange="STATE.settings.personalization.showTrainButtonHome = this.checked; saveState(); updateTopbar();" 
-                                   style="margin-right:5px;">
-                            Show Train Button on Home Screen
-                        </label>
-                    </div>
-                `;
+                return renderHomeSettings();
             case 'case':
-                return `
-                    <div class="settings-group">
-                        <label class="settings-label" style="font-weight:600;font-size:15px;margin-bottom:10px;">CS Case Division (beta)</label>
-                        <div style="display:flex;flex-direction:column;gap:10px;padding:10px;background:#f5f5f5;border-radius:4px;">
-                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-                                <input type="checkbox" ${STATE.settings.divisionSettings?.byParity !== false ? 'checked' : ''} 
-                                       onchange="updateGlobalDivisionSetting('byParity', this.checked)"
-                                       style="margin:0;">
-                                <span style="font-size:14px;">By Parity</span>
-                            </label>
-                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-                                <input type="checkbox" ${STATE.settings.divisionSettings?.byOrientation !== false ? 'checked' : ''} 
-                                       onchange="updateGlobalDivisionSetting('byOrientation', this.checked)"
-                                       style="margin:0;">
-                                <span style="font-size:14px;">By Orientation</span>
-                            </label>
-                            <p style="font-size:12px;color:#666;margin:8px 0 0 0;font-style:italic;">
-                                Turning off a division will merge cases across all cards while preserving their original classification for later restoration.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">Image Size</label>
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <input type="range" min="100" max="700" value="${STATE.settings.imageSize}" 
-                                   oninput="this.nextElementSibling.textContent = this.value + 'px'; STATE.settings.imageSize = parseInt(this.value); saveState(); liveUpdateCaseModal();"
-                                   style="flex:1;">
-                            <span style="min-width:60px;text-align:right;">${STATE.settings.imageSize}px</span>
-                        </div>
-                    </div>
-                    <div class="settings-group">
-                        <button class="btn btn-primary" style="width:100%;margin-bottom:8px;" onclick="openDefaultTrackedPiecesModalInline();">Default Tracked Pieces</button>
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">
-                            <input type="checkbox" ${STATE.settings.personalization.hideActualStateButton ? 'checked' : ''} 
-                                   onchange="STATE.settings.personalization.hideActualStateButton = this.checked; saveState(); liveUpdateCaseModal();" 
-                                   style="margin-right:5px;">
-                            Hide "Show Actual State" Button
-                        </label>
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">
-                            <input type="checkbox" ${STATE.settings.personalization.hideChangeTrackedPiecesButton ? 'checked' : ''} 
-                                   onchange="STATE.settings.personalization.hideChangeTrackedPiecesButton = this.checked; saveState(); liveUpdateCaseModal();" 
-                                   style="margin-right:5px;">
-                            Hide "Change Tracked Pieces" Button
-                        </label>
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">
-                            <input type="checkbox" ${STATE.settings.personalization.hideReferenceSchemeButton ? 'checked' : ''} 
-                                   onchange="STATE.settings.personalization.hideReferenceSchemeButton = this.checked; saveState(); liveUpdateCaseModal();" 
-                                   style="margin-right:5px;">
-                            Hide "Show Reference Scheme" Button
-                        </label>
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">
-                            <input type="checkbox" ${STATE.settings.personalization.swapAlgorithmDisplay ? 'checked' : ''} 
-                                   onchange="STATE.settings.personalization.swapAlgorithmDisplay = this.checked; saveState(); liveUpdateCaseModal();" 
-                                   style="margin-right:5px;">
-                            Swap Input & Normalized Algorithm Display
-                        </label>
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">
-                            <input type="checkbox" ${STATE.settings.personalization.enableMobileView ? 'checked' : ''} 
-                                   onchange="STATE.settings.personalization.enableMobileView = this.checked; saveState(); liveUpdateCaseModal();" 
-                                   style="margin-right:5px;">
-                            Enable Vertical Layout (beta)
-                        </label>
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">
-                            <input type="checkbox" ${STATE.settings.personalization.hideOverrideTrackedPieces ? 'checked' : ''} 
-                                   onchange="STATE.settings.personalization.hideOverrideTrackedPieces = this.checked; saveState(); liveUpdateCaseModal();" 
-                                   style="margin-right:5px;">
-                            Hide Override Tracked Pieces in Edit Modal
-                        </label>
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">
-                            <input type="checkbox" ${STATE.settings.personalization.showTrainButtonCase ? 'checked' : ''} 
-                                   onchange="STATE.settings.personalization.showTrainButtonCase = this.checked; saveState(); liveUpdateCaseModalTopbar();" 
-                                   style="margin-right:5px;">
-                            Show Train Button on Case Screen
-                        </label>
-                    </div>
-                `;
+                return renderCaseSettings();
             case 'training':
                 return renderTrainingSettings();
             case 'memo':
@@ -226,88 +111,47 @@ function openSettingsModal(context = 'sidebar') {
                 return '';
         }
     }
-    
+
     function renderTrainingSettings() {
         if (!window.trainingSettings) window.trainingSettings = loadTrainingSettings();
-        
+
         const parityEnabled = STATE.settings.divisionSettings?.byParity !== false;
         const orientationEnabled = STATE.settings.divisionSettings?.byOrientation !== false;
-        
+
         return `
-            <div class="settings-group">
-                <label class="settings-label">Scramble Text Size</label>
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <input type="range" min="10" max="24" value="${window.trainingSettings.scrambleTextSize}" 
-                           oninput="updateTrainingTextSize(parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px';"
-                           style="flex:1;">
-                    <span style="min-width:50px;text-align:right;">${window.trainingSettings.scrambleTextSize}px</span>
-                </div>
-            </div>
-            <div class="settings-group">
-                <label class="settings-label">Scramble Image Size</label>
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <input type="range" min="150" max="700" value="${window.trainingSettings.scrambleImageSize}" 
-                           oninput="updateTrainingImageSize(parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px';"
-                           style="flex:1;">
-                    <span style="min-width:60px;text-align:right;">${window.trainingSettings.scrambleImageSize}px</span>
-                </div>
-            </div>
-            <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;margin-top:15px;">
-                <label class="settings-label">Display Options</label>
-                <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
-                    <label style="display:flex;align-items:center;gap:5px;">
-                        <input type="checkbox" ${window.trainingSettings.showCaseName ? 'checked' : ''} 
-                               onchange="updateTrainingDisplayOption('showCaseName', this.checked)"
-                               style="margin:0;">
-                        <span style="font-size:13px;">Show Case Name</span>
-                    </label>
-                    <label style="display:flex;align-items:center;gap:5px;${parityEnabled ? '' : 'opacity:0.5;'}">
-                        <input type="checkbox" ${window.trainingSettings.showParity ? 'checked' : ''} 
-                               onchange="updateTrainingDisplayOption('showParity', this.checked)"
-                               style="margin:0;" ${parityEnabled ? '' : 'disabled'}>
-                        <span style="font-size:13px;">Show Parity ${parityEnabled ? '' : '(N/A - Parity division off)'}</span>
-                    </label>
-                    <label style="display:flex;align-items:center;gap:5px;${orientationEnabled ? '' : 'opacity:0.5;'}">
-                        <input type="checkbox" ${window.trainingSettings.showOrientation ? 'checked' : ''} 
-                               onchange="updateTrainingDisplayOption('showOrientation', this.checked)"
-                               style="margin:0;" ${orientationEnabled ? '' : 'disabled'}>
-                        <span style="font-size:13px;">Show Orientation ${orientationEnabled ? '' : '(N/A - Orientation division off)'}</span>
-                    </label>
-                </div>
-            </div>
-            <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;margin-top:15px;">
-                <label class="settings-label">
-                    <input type="checkbox" ${window.trainingSettings.lockOrientation ? 'checked' : ''} 
-                           onchange="updateTrainingLockOrientation(this.checked)"
-                           style="margin-right:5px;">
-                    Lock Orientation (beta)
+        ${createRangeSlider('Scramble Text Size', 10, 24, window.trainingSettings.scrambleTextSize, 'px', 'updateTrainingTextSize')}
+        ${createRangeSlider('Scramble Image Size', 150, 700, window.trainingSettings.scrambleImageSize, 'px', 'updateTrainingImageSize')}
+        <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;margin-top:15px;">
+            <label class="settings-label">Display Options</label>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+                <label style="display:flex;align-items:center;gap:5px;">
+                    <input type="checkbox" ${window.trainingSettings.showCaseName ? 'checked' : ''} 
+                           onchange="updateTrainingDisplayOption('showCaseName', this.checked)"
+                           style="margin:0;">
+                    <span style="font-size:13px;">Show Case Name</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:5px;${parityEnabled ? '' : 'opacity:0.5;'}">
+                    <input type="checkbox" ${window.trainingSettings.showParity ? 'checked' : ''} 
+                           onchange="updateTrainingDisplayOption('showParity', this.checked)"
+                           style="margin:0;" ${parityEnabled ? '' : 'disabled'}>
+                    <span style="font-size:13px;">Show Parity ${parityEnabled ? '' : '(N/A - Parity division off)'}</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:5px;${orientationEnabled ? '' : 'opacity:0.5;'}">
+                    <input type="checkbox" ${window.trainingSettings.showOrientation ? 'checked' : ''} 
+                           onchange="updateTrainingDisplayOption('showOrientation', this.checked)"
+                           style="margin:0;" ${orientationEnabled ? '' : 'disabled'}>
+                    <span style="font-size:13px;">Show Orientation ${orientationEnabled ? '' : '(N/A - Orientation division off)'}</span>
                 </label>
             </div>
-            <div class="settings-group" style="display:${window.trainingSettings.lockOrientation ? 'none' : 'block'};" id="allowMirrorContainer">
-                <label class="settings-label">
-                    <input type="checkbox" ${window.trainingSettings.allowMirror ? 'checked' : ''} 
-                           onchange="updateTrainingAllowMirror(this.checked)"
-                           style="margin-right:5px;">
-                    Allow Mirror (beta)
-                </label>
-            </div>
-            <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;margin-top:15px;">
-                <label class="settings-label">
-                    <input type="checkbox" ${window.trainingSettings.disableStartCue ? 'checked' : ''} 
-                           onchange="updateTrainingDisableStartCue(this.checked)"
-                           style="margin-right:5px;">
-                    Turn Off Starting Cue (Remove 0.3s Hold)
-                </label>
-            </div>
-        `;
+        </div>
+        ${renderOrientationSettings(window.trainingSettings)}
+        ${createCheckbox('Turn Off Starting Cue (Remove 0.3s Hold)', window.trainingSettings.disableStartCue, 'updateTrainingDisableStartCue', 'border-top:1px solid #ddd;padding-top:15px;margin-top:15px;')}
+    `;
     }
-    
+
     function renderMemoSettings() {
         if (!window.memoTrainingSettings) loadMemoTrainingSettings();
-        
-        const parityEnabled = STATE.settings.divisionSettings?.byParity !== false;
-        const orientationEnabled = STATE.settings.divisionSettings?.byOrientation !== false;
-        
+
         const colorScheme = {
             topColor: '#000000',
             bottomColor: '#FFFFFF',
@@ -318,133 +162,71 @@ function openSettingsModal(context = 'sidebar') {
             dividerColor: '#7a0000',
             circleColor: 'transparent'
         };
-        
-        // Build piece labels map
+
         const pieceLabels = {};
         STATE.settings.colorMappings.forEach(mapping => {
             if (mapping.label) {
                 pieceLabels[mapping.hex] = mapping.label;
             }
         });
-        
-        // (0,0) hex code
+
         const zeroZeroHex = '011233455677|998bbaddcffe';
-        
-        // Generate (0,0) base image (fully colored, randomized - decoy)
-        
         const baseImage = window.Square1VisualizerLibraryWithSillyNames.visualizeFromHexCodePlease(
-            zeroZeroHex,
-            200, 
-            colorScheme, 
-            5, 
-            false,
-            null
+            zeroZeroHex, 200, colorScheme, 5, false, null
         );
-        
-        
-        // Generate hitbox overlay (invisible polygons with labels)
-        
         const hitboxOverlay = window.Square1VisualizerLibraryWithSillyNames.visualizeFromHexCodePlease(
-            zeroZeroHex,
-            200, 
-            colorScheme, 
-            5, 
-            true, // Show labels
-            pieceLabels
+            zeroZeroHex, 200, colorScheme, 5, true, pieceLabels
         );
-        
-        
+
         return `
-            <div class="settings-group">
-                <label class="settings-label">Image Size</label>
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <input type="range" min="150" max="700" value="${window.memoTrainingSettings.imageSize}" 
-                           oninput="updateMemoImageSize(parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px';"
-                           style="flex:1;">
-                    <span style="min-width:60px;text-align:right;">${window.memoTrainingSettings.imageSize}px</span>
-                </div>
+        ${createRangeSlider('Image Size', 150, 700, window.memoTrainingSettings.imageSize, 'px', 'updateMemoImageSize')}
+        ${renderOrientationSettings(window.memoTrainingSettings, 'memo')}
+        ${createCheckbox('Enable Vertical Mode (Mobile-Friendly)', window.memoTrainingSettings.enableVerticalMode, 'updateMemoVerticalMode')}
+        <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;margin-top:15px;">
+            ${createRangeSlider('Track Last N Pieces', 0, 16, window.memoTrainingSettings.trackLastNPieces, '', 'updateMemoTrackLastN').replace('settings-group', 'settings-label')}
+            <p style="font-size:12px;color:#666;margin:5px 0 15px 0;">Keep labels visible for the last N clicked pieces (0 = timed mode)</p>
+        </div>
+        <div class="settings-group" style="display:${window.memoTrainingSettings.trackLastNPieces === 0 ? 'block' : 'none'};" id="memoTimedLabelContainer">
+            ${createRangeSlider('Show Labels For (seconds)', 0, 5, window.memoTrainingSettings.showLabelsForSeconds, 's', 'updateMemoShowLabelsForSeconds', 0.1).replace('settings-group', 'settings-label')}
+            <p style="font-size:12px;color:#666;margin:5px 0;">Labels appear temporarily after clicking</p>
+        </div>
+        <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;margin-top:15px;">
+            <label class="settings-label">Piece Order</label>
+            <div style="padding:10px;background:#f0f0f0;border-radius:4px;font-size:13px;margin-bottom:10px;font-family:monospace;" id="memoOrderCurrentDisplay">
+                Current Order: ${window.memoTrainingSettings.pieceOrder.map(hex => translateHexToPieceCode(hex)).join(' → ')}
             </div>
-            <div class="settings-group">
-                <label class="settings-label">
-                    <input type="checkbox" ${window.memoTrainingSettings.lockOrientation ? 'checked' : ''} 
-                           onchange="updateMemoLockOrientation(this.checked)"
-                           style="margin-right:5px;">
-                    Lock Orientation (beta)
-                </label>
-            </div>
-            <div class="settings-group" style="display:${window.memoTrainingSettings.lockOrientation ? 'none' : 'block'};" id="memoAllowMirrorContainer">
-                <label class="settings-label">
-                    <input type="checkbox" ${window.memoTrainingSettings.allowMirror ? 'checked' : ''} 
-                           onchange="updateMemoAllowMirror(this.checked)"
-                           style="margin-right:5px;">
-                    Allow Mirror (beta)
-                </label>
-            </div>
-            <div class="settings-group">
-                <label class="settings-label">
-                    <input type="checkbox" ${window.memoTrainingSettings.enableVerticalMode ? 'checked' : ''} 
-                           onchange="updateMemoVerticalMode(this.checked)"
-                           style="margin-right:5px;">
-                    Enable Vertical Mode (Mobile-Friendly)
-                </label>
-            </div>
-            <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;margin-top:15px;">
-                <label class="settings-label">Track Last N Pieces</label>
-                <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-                    <input type="range" min="0" max="16" value="${window.memoTrainingSettings.trackLastNPieces}" 
-                           oninput="updateMemoTrackLastN(parseInt(this.value)); this.nextElementSibling.textContent = this.value;"
-                           style="flex:1;">
-                    <span style="min-width:30px;text-align:right;">${window.memoTrainingSettings.trackLastNPieces}</span>
-                </div>
-                <p style="font-size:12px;color:#666;margin:5px 0;">Keep labels visible for the last N clicked pieces (0 = timed mode)</p>
-            </div>
-            <div class="settings-group" style="display:${window.memoTrainingSettings.trackLastNPieces === 0 ? 'block' : 'none'};" id="memoTimedLabelContainer">
-                <label class="settings-label">Show Labels For (seconds)</label>
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <input type="range" min="0" max="5" step="0.1" value="${window.memoTrainingSettings.showLabelsForSeconds}" 
-                           oninput="updateMemoShowLabelsForSeconds(parseFloat(this.value)); this.nextElementSibling.textContent = this.value + 's';"
-                           style="flex:1;">
-                    <span style="min-width:40px;text-align:right;">${window.memoTrainingSettings.showLabelsForSeconds}s</span>
-                </div>
-                <p style="font-size:12px;color:#666;margin:5px 0;">Labels appear temporarily after clicking</p>
-            </div>
-            <div class="settings-group" style="border-top:1px solid #ddd;padding-top:15px;margin-top:15px;">
-                <label class="settings-label">Piece Order</label>
-                <div style="padding:10px;background:#f0f0f0;border-radius:4px;font-size:13px;margin-bottom:10px;font-family:monospace;" id="memoOrderCurrentDisplay">
-                    Current Order: ${window.memoTrainingSettings.pieceOrder.map(hex => translateHexToPieceCode(hex)).join(' → ')}
-                </div>
-                <div style="margin-bottom:15px;">
-                    <div style="font-weight:600;margin-bottom:8px;">Click pieces in your desired order:</div>
-                    <div style="display:flex;justify-content:center;margin-bottom:10px;">
-                        <div id="memoOrderSelector" style="position:relative;display:inline-block;">
-                            ${baseImage}
-                            <div id="memoOrderOverlay" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">
-                                ${hitboxOverlay}
-                            </div>
+            <div style="margin-bottom:15px;">
+                <div style="font-weight:600;margin-bottom:8px;">Click pieces in your desired order:</div>
+                <div style="display:flex;justify-content:center;margin-bottom:10px;">
+                    <div id="memoOrderSelector" style="position:relative;display:inline-block;">
+                        ${baseImage}
+                        <div id="memoOrderOverlay" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">
+                            ${hitboxOverlay}
                         </div>
                     </div>
-                    <div id="memoOrderPreview" style="padding:10px;background:#f0f0f0;border-radius:4px;font-size:13px;min-height:40px;margin-bottom:10px;">
-                        Click pieces to set order...
-                    </div>
-                    <div style="display:flex;gap:10px;">
-                        <button class="btn" onclick="window.resetMemoOrderSelection()">Reset Selection</button>
-                        <button class="btn btn-primary" onclick="window.applyMemoOrderSelection()">Apply Order</button>
-                    </div>
+                </div>
+                <div id="memoOrderPreview" style="padding:10px;background:#f0f0f0;border-radius:4px;font-size:13px;min-height:40px;margin-bottom:10px;">
+                    Click pieces to set order...
+                </div>
+                <div style="display:flex;gap:10px;">
+                    ${createButton('Reset Selection', 'window.resetMemoOrderSelection()')}
+                    ${createButton('Apply Order', 'window.applyMemoOrderSelection()', 'btn btn-primary')}
                 </div>
             </div>
-        `;
+        </div>
+    `;
     }
-    
+
     function updateTabContent() {
-        
+
         const contentArea = document.getElementById('settingsTabContent');
         if (contentArea) {
             contentArea.innerHTML = renderTabContent(activeTab);
-            
+
         } else {
             console.error('[MemoOrder] settingsTabContent element NOT FOUND!');
         }
-        
+
         // Update modal title based on active tab
         const titleEl = document.getElementById('settingsModalTitle');
         if (titleEl) {
@@ -457,36 +239,36 @@ function openSettingsModal(context = 'sidebar') {
             };
             titleEl.textContent = titles[activeTab] || 'Settings';
         }
-        
+
         // Update button styles to reflect active state
         updateTabButtons();
-        
+
         // Initialize memo order selector if on memo tab
         // Initialize memo order selector if on memo tab
-    
-    if (activeTab === 'memo') {
-        
-        
-        setTimeout(() => {
-            
-            
-            
-            if (typeof initializeMemoOrderSelector === 'function') {
-                initializeMemoOrderSelector();
-            } else {
-                console.error('[MemoOrder] initializeMemoOrderSelector is not a function!');
-            }
-        }, 100);
-    } else {
-        
-    }
-        
+
+        if (activeTab === 'memo') {
+
+
+            setTimeout(() => {
+
+
+
+                if (typeof initializeMemoOrderSelector === 'function') {
+                    initializeMemoOrderSelector();
+                } else {
+                    console.error('[MemoOrder] initializeMemoOrderSelector is not a function!');
+                }
+            }, 100);
+        } else {
+
+        }
+
         // Reload training settings to get fresh values
         if (activeTab === 'training') {
             window.trainingSettings = loadTrainingSettings();
         }
     }
-    
+
     function updateTabButtons() {
         for (const [key, tab] of Object.entries(tabs)) {
             const button = document.querySelector(`[data-tab-id="${key}"]`);
@@ -495,16 +277,16 @@ function openSettingsModal(context = 'sidebar') {
                 const isDisabled = !tab.enabled;
                 const bgColor = isActive ? '#007bff' : (isDisabled ? '#f0f0f0' : '#fff');
                 const textColor = isActive ? '#fff' : (isDisabled ? '#999' : '#333');
-                
+
                 button.style.background = bgColor;
                 button.style.color = textColor;
             }
         }
     }
-    
+
     function renderTabs() {
         let tabsHtml = '<div style="display:flex;flex-direction:column;gap:5px;padding:10px;background:#f5f5f5;border-right:1px solid #ddd;min-width:60px;">';
-        
+
         for (const [key, tab] of Object.entries(tabs)) {
             const isActive = activeTab === key;
             const isDisabled = !tab.enabled;
@@ -512,7 +294,7 @@ function openSettingsModal(context = 'sidebar') {
             const textColor = isActive ? '#fff' : (isDisabled ? '#999' : '#333');
             const cursor = isDisabled ? 'not-allowed' : 'pointer';
             const opacity = isDisabled ? '0.5' : '1';
-            
+
             tabsHtml += `
                 <button data-tab-id="${key}" onclick="${isDisabled ? '' : `window.switchSettingsTab('${key}')`}" 
                         style="padding:12px;background:${bgColor};color:${textColor};border:1px solid #ddd;cursor:${cursor};opacity:${opacity};border-radius:4px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;"
@@ -522,11 +304,11 @@ function openSettingsModal(context = 'sidebar') {
                 </button>
             `;
         }
-        
+
         tabsHtml += '</div>';
         return tabsHtml;
     }
-    
+
     modal.innerHTML = `
         <div class="modal-content" style="max-width:700px;max-height:85vh;margin:auto;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;">
             <div class="modal-header">
@@ -546,21 +328,148 @@ function openSettingsModal(context = 'sidebar') {
             </div>
         </div>
     `;
-    
+
     document.body.appendChild(modal);
-    
-    
-    window.switchSettingsTab = function(tabId) {
-        
+
+
+    window.switchSettingsTab = function (tabId) {
+
         activeTab = tabId;
         updateTabContent();
     };
-    
+
     // Initialize the initial tab content (including memo selector if memo tab is active)
-    
+
     updateTabContent();
-    
+
     modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+}
+
+function renderHomeSettings() {
+    return `
+        ${createRangeSlider('Card Size Scale', 0.5, 2, STATE.settings.personalization.cardScale || 1, 'x', 'function(v) { STATE.settings.personalization.cardScale = v; saveState(); renderCards(); }', 0.1)}
+        ${createCheckbox('Hide Search Bar on Home Screen', STATE.settings.personalization.hideSearchBar, 'function(v) { STATE.settings.personalization.hideSearchBar = v; saveState(); renderCards(); }')}
+        ${createCheckbox('Show Train Button on Home Screen', STATE.settings.personalization.showTrainButtonHome, 'function(v) { STATE.settings.personalization.showTrainButtonHome = v; saveState(); updateTopbar(); }')}
+    `;
+}
+
+function renderCaseSettings() {
+    const divisionSettings = STATE.settings.divisionSettings || { byParity: true, byOrientation: true };
+
+    return `
+        <div class="settings-group">
+            <label class="settings-label" style="font-weight:600;font-size:15px;margin-bottom:10px;">CS Case Division (beta)</label>
+            <div style="display:flex;flex-direction:column;gap:10px;padding:10px;background:#f5f5f5;border-radius:4px;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input type="checkbox" ${divisionSettings.byParity !== false ? 'checked' : ''} 
+                           onchange="updateGlobalDivisionSetting('byParity', this.checked)"
+                           style="margin:0;">
+                    <span style="font-size:14px;">By Parity</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input type="checkbox" ${divisionSettings.byOrientation !== false ? 'checked' : ''} 
+                           onchange="updateGlobalDivisionSetting('byOrientation', this.checked)"
+                           style="margin:0;">
+                    <span style="font-size:14px;">By Orientation</span>
+                </label>
+                <p style="font-size:12px;color:#666;margin:8px 0 0 0;font-style:italic;">
+                    Turning off a division will merge cases across all cards while preserving their original classification for later restoration.
+                </p>
+            </div>
+        </div>
+        ${createRangeSlider('Image Size', 100, 700, STATE.settings.imageSize, 'px', 'function(v) { STATE.settings.imageSize = v; saveState(); liveUpdateCaseModal(); }')}
+        <div class="settings-group">
+            ${createButton('Default Tracked Pieces', 'openDefaultTrackedPiecesModalInline()', 'btn btn-primary', 'width:100%;margin-bottom:8px;')}
+        </div>
+        ${createCheckbox('Hide "Show Actual State" Button', STATE.settings.personalization.hideActualStateButton, 'function(v) { STATE.settings.personalization.hideActualStateButton = v; saveState(); liveUpdateCaseModal(); }')}
+        ${createCheckbox('Hide "Change Tracked Pieces" Button', STATE.settings.personalization.hideChangeTrackedPiecesButton, 'function(v) { STATE.settings.personalization.hideChangeTrackedPiecesButton = v; saveState(); liveUpdateCaseModal(); }')}
+        ${createCheckbox('Hide "Show Reference Scheme" Button', STATE.settings.personalization.hideReferenceSchemeButton, 'function(v) { STATE.settings.personalization.hideReferenceSchemeButton = v; saveState(); liveUpdateCaseModal(); }')}
+        ${createCheckbox('Swap Input & Normalized Algorithm Display', STATE.settings.personalization.swapAlgorithmDisplay, 'function(v) { STATE.settings.personalization.swapAlgorithmDisplay = v; saveState(); liveUpdateCaseModal(); }')}
+        ${createCheckbox('Enable Vertical Layout (beta)', STATE.settings.personalization.enableMobileView, 'function(v) { STATE.settings.personalization.enableMobileView = v; saveState(); liveUpdateCaseModal(); }')}
+        ${createCheckbox('Hide Override Tracked Pieces in Edit Modal', STATE.settings.personalization.hideOverrideTrackedPieces, 'function(v) { STATE.settings.personalization.hideOverrideTrackedPieces = v; saveState(); liveUpdateCaseModal(); }')}
+        ${createCheckbox('Show Train Button on Case Screen', STATE.settings.personalization.showTrainButtonCase, 'function(v) { STATE.settings.personalization.showTrainButtonCase = v; saveState(); liveUpdateCaseModalTopbar(); }')}
+    `;
+}
+
+function renderOrientationSettings(settings, prefix = '') {
+    const lockOrientationId = prefix ? `${prefix}AllowMirrorContainer` : 'allowMirrorContainer';
+    return `
+        <div class="settings-group">
+            <label class="settings-label">
+                <input type="checkbox" ${settings.lockOrientation ? 'checked' : ''} 
+                       onchange="${prefix ? 'updateMemoLockOrientation' : 'updateTrainingLockOrientation'}(this.checked)"
+                       style="margin-right:5px;">
+                Lock Orientation (beta)
+            </label>
+        </div>
+        <div class="settings-group" style="display:${settings.lockOrientation ? 'none' : 'block'};" id="${lockOrientationId}">
+            <label class="settings-label">
+                <input type="checkbox" ${settings.allowMirror ? 'checked' : ''} 
+                       onchange="${prefix ? 'updateMemoAllowMirror' : 'updateTrainingAllowMirror'}(this.checked)"
+                       style="margin-right:5px;">
+                Allow Mirror (beta)
+            </label>
+        </div>
+    `;
+}
+
+// ============================================
+// HELPER FUNCTIONS FOR SETTINGS RENDERING
+// ============================================
+
+function createRangeSlider(label, min, max, value, unit, onChangeFunc, step = null) {
+    const stepAttr = step ? `step="${step}"` : '';
+    // Check if onChangeFunc is a string that starts with "function"
+    const isInlineFunc = typeof onChangeFunc === 'string' && onChangeFunc.startsWith('function');
+    const changeHandler = isInlineFunc
+        ? `(${onChangeFunc})(${step ? 'parseFloat(this.value)' : 'parseInt(this.value)'}); this.nextElementSibling.textContent = this.value + '${unit}';`
+        : `${onChangeFunc}(${step ? 'parseFloat(this.value)' : 'parseInt(this.value)'}); this.nextElementSibling.textContent = this.value + '${unit}';`;
+
+    return `
+        <div class="settings-group">
+            <label class="settings-label">${label}</label>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <input type="range" min="${min}" max="${max}" ${stepAttr} value="${value}" 
+                       oninput="${changeHandler}"
+                       style="flex:1;">
+                <span style="min-width:60px;text-align:right;">${value}${unit}</span>
+            </div>
+        </div>
+    `;
+}
+
+function createCheckbox(label, checked, onChangeFunc, additionalStyle = '') {
+    // Check if onChangeFunc is a string that starts with "function"
+    const isInlineFunc = typeof onChangeFunc === 'string' && onChangeFunc.startsWith('function');
+    const changeHandler = isInlineFunc
+        ? `(${onChangeFunc})(this.checked)`
+        : `${onChangeFunc}(this.checked)`;
+
+    return `
+        <div class="settings-group" ${additionalStyle ? `style="${additionalStyle}"` : ''}>
+            <label class="settings-label">
+                <input type="checkbox" ${checked ? 'checked' : ''} 
+                       onchange="${changeHandler}"
+                       style="margin-right:5px;">
+                ${label}
+            </label>
+        </div>
+    `;
+}
+
+function createColorPicker(label, value, onChangeFunc) {
+    return `
+        <div>
+            <label style="font-size:12px;display:block;margin-bottom:3px;">${label}</label>
+            <input type="color" value="${value}" 
+                   onchange="${onChangeFunc}('${label.toLowerCase().replace(' ', '')}', this.value)"
+                   style="width:100%;height:32px;cursor:pointer;">
+        </div>
+    `;
+}
+
+function createButton(text, onClick, className = 'btn', style = '') {
+    return `<button class="${className}" onclick="${onClick}" style="${style}">${text}</button>`;
 }
 
 function updateGlobalColor(colorKey, value) {
@@ -676,7 +585,7 @@ function openDefaultTrackedPiecesModal() {
     modal.style.display = 'block';
 
     const pieces = ['UB', 'UBL', 'UL', 'ULF', 'UF', 'UFR', 'UR', 'URB', 'DR', 'DRB', 'DF', 'DFR', 'DL', 'DLF', 'DB', 'DLB'];
-    
+
     // Backup original state
     const originalTrackedPieces = [...STATE.settings.defaultTrackedPieces];
 
@@ -701,7 +610,7 @@ function openDefaultTrackedPiecesModal() {
                     textColor = luminance > 0.5 ? '#000' : '#fff';
                 }
             }
-            
+
             html += `
                         <button onclick="toggleDefaultTrackedPiece('${piece}')" 
                                 style="padding:12px;border:2px solid ${borderColor};background:${bgColor};color:${textColor};cursor:pointer;font-size:13px;font-weight:${fontWeight};transition:all 0.2s;">
@@ -762,107 +671,6 @@ function openDefaultTrackedPiecesModal() {
     modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
 }
 
-function openPersonalizationModal() {
-    const modal = document.createElement('div');
-    modal.className = 'modal';
-    modal.style.display = 'block';
-
-    modal.innerHTML = `
-        <div class="modal-content" style="max-width:500px;">
-            <div class="modal-header">
-                <h3>Personalization</h3>
-                <button class="close-btn" onclick="this.closest('.modal').remove()">×</button>
-            </div>
-            <div class="modal-body">
-                <div class="settings-group">
-                    <label class="settings-label">Card Size Scale</label>
-                    <div style="display:flex;align-items:center;gap:10px;">
-                        <input type="range" min="0.5" max="2" step="0.1" value="${STATE.settings.personalization.cardScale || 1}" 
-                               oninput="this.nextElementSibling.textContent = this.value + 'x'; STATE.settings.personalization.cardScale = parseFloat(this.value); saveState(); renderCards();"
-                               style="flex:1;">
-                        <span style="min-width:60px;text-align:right;">${STATE.settings.personalization.cardScale || 1}x</span>
-                    </div>
-                </div>
-                <div class="settings-group">
-                    <label class="settings-label">
-                        <input type="checkbox" ${STATE.settings.personalization.hideActualStateButton ? 'checked' : ''} 
-                               onchange="STATE.settings.personalization.hideActualStateButton = this.checked; saveState(); liveUpdateCaseModal();" 
-                               style="margin-right:5px;">
-                        Hide "Show Actual State" Button
-                    </label>
-                </div>
-                <div class="settings-group">
-                    <label class="settings-label">
-                        <input type="checkbox" ${STATE.settings.personalization.hideChangeTrackedPiecesButton ? 'checked' : ''} 
-                               onchange="STATE.settings.personalization.hideChangeTrackedPiecesButton = this.checked; saveState(); liveUpdateCaseModal();" 
-                               style="margin-right:5px;">
-                        Hide "Change Tracked Pieces" Button
-                    </label>
-                </div>
-                <div class="settings-group">
-                    <label class="settings-label">
-                        <input type="checkbox" ${STATE.settings.personalization.hideReferenceSchemeButton ? 'checked' : ''} 
-                               onchange="STATE.settings.personalization.hideReferenceSchemeButton = this.checked; saveState(); liveUpdateCaseModal();" 
-                               style="margin-right:5px;">
-                        Hide "Show Reference Scheme" Button
-                    </label>
-                </div>
-                <div class="settings-group">
-                    <label class="settings-label">
-                        <input type="checkbox" ${STATE.settings.personalization.swapAlgorithmDisplay ? 'checked' : ''} 
-                               onchange="STATE.settings.personalization.swapAlgorithmDisplay = this.checked; saveState(); liveUpdateCaseModal();" 
-                               style="margin-right:5px;">
-                        Swap Input & Normalized Algorithm Display
-                    </label>
-                </div>
-                <div class="settings-group">
-                    <label class="settings-label">
-                        <input type="checkbox" ${STATE.settings.personalization.enableMobileView ? 'checked' : ''} 
-                               onchange="STATE.settings.personalization.enableMobileView = this.checked; saveState(); liveUpdateCaseModal();" 
-                               style="margin-right:5px;">
-                        Enable Mobile View (Vertical Layout)
-                    </label>
-                </div>
-                <div class="settings-group">
-                    <label class="settings-label">
-                        <input type="checkbox" ${STATE.settings.personalization.hideSearchBar ? 'checked' : ''} 
-                               onchange="STATE.settings.personalization.hideSearchBar = this.checked; saveState(); renderCards();" 
-                               style="margin-right:5px;">
-                        Hide Search Bar on Home Screen
-                    </label>
-                </div>
-                <div class="settings-group">
-                        <label class="settings-label">
-                            <input type="checkbox" ${STATE.settings.personalization.hideOverrideTrackedPieces ? 'checked' : ''} 
-                                   onchange="STATE.settings.personalization.hideOverrideTrackedPieces = this.checked; saveState(); liveUpdateCaseModal();" 
-                                   style="margin-right:5px;">
-                            Hide Override Tracked Pieces in Edit Modal
-                        </label>
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">
-                            <input type="checkbox" ${STATE.settings.personalization.showTrainButtonCase ? 'checked' : ''} 
-                                   onchange="STATE.settings.personalization.showTrainButtonCase = this.checked; saveState(); liveUpdateCaseModalTopbar();" 
-                                   style="margin-right:5px;">
-                            Show Train Button on Case Screen
-                        </label>
-                    </div>
-                <div class="settings-group">
-                    <label class="settings-label">
-                        <input type="checkbox" ${STATE.settings.personalization.hideInstructions ? 'checked' : ''} 
-                               onchange="STATE.settings.personalization.hideInstructions = this.checked; saveState(); updateTopbar(); renderCards();" 
-                               style="margin-right:5px;">
-                        Hide Instruction Buttons
-                    </label>
-                </div>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
-}
-
 function exportData() {
     // Include ALL settings from localStorage
     const exportData = {
@@ -872,7 +680,7 @@ function exportData() {
         memoSelectedCases: JSON.parse(localStorage.getItem('sq1MemoSelectedCases') || '[]'),
         trainingSelectedCases: JSON.parse(localStorage.getItem('sq1TrainingSelectedCases') || '[]')
     };
-    
+
     const dataStr = JSON.stringify(exportData, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -889,28 +697,28 @@ function importData(input) {
     reader.onload = (e) => {
         try {
             const imported = JSON.parse(e.target.result);
-            
+
             // Import ALL training settings if present
             if (imported.trainingSettings) {
                 localStorage.setItem('sq1TrainingSettings', JSON.stringify(imported.trainingSettings));
                 delete imported.trainingSettings;
             }
-            
+
             if (imported.memoTrainingSettings) {
                 localStorage.setItem('sq1MemoTrainingSettings', JSON.stringify(imported.memoTrainingSettings));
                 delete imported.memoTrainingSettings;
             }
-            
+
             if (imported.memoSelectedCases) {
                 localStorage.setItem('sq1MemoSelectedCases', JSON.stringify(imported.memoSelectedCases));
                 delete imported.memoSelectedCases;
             }
-            
+
             if (imported.trainingSelectedCases) {
                 localStorage.setItem('sq1TrainingSelectedCases', JSON.stringify(imported.trainingSelectedCases));
                 delete imported.trainingSelectedCases;
             }
-            
+
             // Import main state
             Object.assign(STATE, imported);
             saveState();
@@ -941,7 +749,7 @@ function liveUpdateCaseSettingsChanges() {
 function initializeMemoOrderSelector() {
     window.memoOrderClickSequence = [];
     const overlay = document.getElementById('memoOrderOverlay');
-      
+
     if (!overlay) {
         console.error('[MemoOrder] ❌ OVERLAY ELEMENT NOT FOUND!');
         console.error('[MemoOrder] Available elements with "memo" in ID:');
@@ -950,52 +758,52 @@ function initializeMemoOrderSelector() {
         });
         return;
     }
-    
-    
-    
+
+
+
     // Clear all existing click states from polygons
     const existingPolygons = overlay.querySelectorAll('polygon');
-    
+
     existingPolygons.forEach((poly, idx) => {
         const hadClicked = poly.dataset.clicked;
         const hadHex = poly.dataset.hexValue;
         delete poly.dataset.clicked;
         delete poly.dataset.hexValue;
         if (hadClicked || hadHex) {
-            
+
         }
     });
-    
+
     if (!overlay) {
         console.error('[MemoOrder] Overlay element NOT found!');
         return;
     }
-    
+
     const allPolygons = overlay.querySelectorAll('polygon');
     const allTexts = overlay.querySelectorAll('text');
-    
-    
+
+
     // Hide all labels initially
-    
+
     allTexts.forEach((textEl, idx) => {
         textEl.style.opacity = '0';
         textEl.style.pointerEvents = 'none';
     });
-    
+
     // Make each polygon a clickable hitbox
-    
+
     allPolygons.forEach((polygon, polyIdx) => {
-        
+
         polygon.style.fill = 'transparent';
         polygon.style.stroke = 'transparent';
         polygon.style.pointerEvents = 'auto';
         polygon.style.cursor = 'pointer';
         polygon.style.webkitTapHighlightColor = 'transparent';
         polygon.style.userSelect = 'none';
-          
+
         const parentSvg = polygon.closest('svg');
         const textsInSvg = parentSvg ? parentSvg.querySelectorAll('text') : [];
-        
+
         const points = polygon.getAttribute('points').split(' ');
         let sumX = 0, sumY = 0, count = 0;
         points.forEach(point => {
@@ -1006,38 +814,38 @@ function initializeMemoOrderSelector() {
         });
         const centerX = sumX / count;
         const centerY = sumY / count;
-        
+
         let closestText = null;
         let minDistance = Infinity;
-        
+
         textsInSvg.forEach(textEl => {
             const x = parseFloat(textEl.getAttribute('x'));
             const y = parseFloat(textEl.getAttribute('y'));
             const distance = Math.sqrt(Math.pow(centerX - x, 2) + Math.pow(centerY - y, 2));
-            
+
             if (distance < minDistance) {
                 minDistance = distance;
                 closestText = textEl;
             }
         });
-        
+
         if (closestText && minDistance < 100) {
             const allSvgs = overlay.querySelectorAll('svg');
             const isBottomLayer = parentSvg === allSvgs[1];
             const textsInLayer = parentSvg.querySelectorAll('text');
             const textIndex = Array.from(textsInLayer).indexOf(closestText);
-            
+
             const zeroZeroHex = '011233455677|998bbaddcffe';
             let pieceHex = null;
-            
+
             let currentPieceIndex = 0;
             let hexIndex = isBottomLayer ? 13 : 0;
             const endIndex = isBottomLayer ? 25 : 12;
-            
+
             while (hexIndex < endIndex && currentPieceIndex <= textIndex) {
                 const char = zeroZeroHex[hexIndex].toLowerCase();
                 const isCorner = ['1', '3', '5', '7', '9', 'b', 'd', 'f'].includes(char);
-                
+
                 if (currentPieceIndex === textIndex) {
                     if (isCorner && hexIndex + 1 < endIndex) {
                         pieceHex = char + char;
@@ -1046,17 +854,17 @@ function initializeMemoOrderSelector() {
                     }
                     break;
                 }
-                
+
                 currentPieceIndex++;
                 if (isCorner) {
                     hexIndex += 2;
                 } else {
                     hexIndex += 1;
                 }
-                
+
                 if (hexIndex === 12) hexIndex = 13;
             }
-            
+
             let pieceCode = null;
             for (const mapping of STATE.settings.colorMappings) {
                 if (mapping.hex.toLowerCase() === pieceHex.toLowerCase()) {
@@ -1064,19 +872,19 @@ function initializeMemoOrderSelector() {
                     break;
                 }
             }
-            
+
             if (pieceHex) {
-                
-                
+
+
                 polygon.addEventListener('click', (e) => {
-                    
+
                     e.stopPropagation();
                     handleMemoOrderClick(pieceCode, closestText, polygon, pieceHex);
                 });
-                
+
                 polygon.addEventListener('mouseenter', () => {
                     const isClicked = polygon.dataset.clicked === 'true';
-                    
+
                     if (!isClicked) {
                         polygon.style.cursor = 'pointer';
                     } else {
@@ -1089,38 +897,38 @@ function initializeMemoOrderSelector() {
         } else {
             console.warn(`[MemoOrder] Polygon ${polyIdx}: No closest text found (minDistance: ${minDistance})`);
         }
-    });    
+    });
 }
 
 function handleMemoOrderClick(pieceCode, textElement, polygon, hexValue) {
-    
-    if (polygon.dataset.clicked === 'true') { 
+
+    if (polygon.dataset.clicked === 'true') {
         return;
     }
-    
+
     if (!window.memoOrderClickSequence) {
         console.error('[MemoOrder] Click sequence not initialized!');
         window.memoOrderClickSequence = [];
     }
-    
+
     polygon.dataset.clicked = 'true';
-    polygon.dataset.hexValue = hexValue;    
+    polygon.dataset.hexValue = hexValue;
     window.memoOrderClickSequence.push(hexValue.toLowerCase());
     textElement.style.opacity = '1';
     textElement.style.fill = 'white';
     textElement.style.stroke = 'black';
     textElement.style.strokeWidth = '3';
     textElement.setAttribute('paint-order', 'stroke');
-    
+
     const preview = document.getElementById('memoOrderPreview');
     if (preview) {
         preview.textContent = `Order: ${window.memoOrderClickSequence.map(hex => translateHexToPieceCode(hex)).join(' → ')}`;
     }
 }
 
-window.resetMemoOrderSelection = function() {
+window.resetMemoOrderSelection = function () {
     window.memoOrderClickSequence = [];
-    
+
     const overlay = document.getElementById('memoOrderOverlay');
     if (overlay) {
         const textElements = overlay.querySelectorAll('text');
@@ -1133,19 +941,19 @@ window.resetMemoOrderSelection = function() {
             delete poly.dataset.hexValue;
         });
     }
-    
+
     const preview = document.getElementById('memoOrderPreview');
     if (preview) {
         preview.textContent = 'Click pieces to set order...';
     }
 };
 
-window.applyMemoOrderSelection = function() {
+window.applyMemoOrderSelection = function () {
     if (!window.memoOrderClickSequence || window.memoOrderClickSequence.length === 0) {
-        showConfirmModal('Error', 'Please select at least one piece', () => {});
+        showConfirmModal('Error', 'Please select at least one piece', () => { });
         return;
     }
-    
+
     if (window.memoOrderClickSequence.length !== 16) {
         showConfirmModal('Warning', `You've only selected ${window.memoOrderClickSequence.length} pieces. Continue anyway?`, () => {
             if (!window.memoTrainingSettings) {
@@ -1153,31 +961,31 @@ window.applyMemoOrderSelection = function() {
             }
             window.memoTrainingSettings.pieceOrder = [...window.memoOrderClickSequence];
             saveMemoTrainingSettings();
-            
+
             // Update current display
             const display = document.getElementById('memoOrderCurrentDisplay');
             if (display) {
                 display.textContent = `Current Order: ${window.memoTrainingSettings.pieceOrder.map(hex => translateHexToPieceCode(hex)).join(' → ')}`;
             }
-            
-            showConfirmModal('Success', 'Piece order updated successfully!', () => {});
+
+            showConfirmModal('Success', 'Piece order updated successfully!', () => { });
         });
         return;
     }
-    
+
     if (!window.memoTrainingSettings) {
         loadMemoTrainingSettings();
     }
     window.memoTrainingSettings.pieceOrder = [...window.memoOrderClickSequence];
     saveMemoTrainingSettings();
-    
+
     // Update current display
     const display = document.getElementById('memoOrderCurrentDisplay');
     if (display) {
         display.textContent = `Current Order: ${window.memoTrainingSettings.pieceOrder.map(hex => translateHexToPieceCode(hex)).join(' → ')}`;
     }
-    
-    showConfirmModal('Success', 'Piece order updated successfully!', () => {});
+
+    showConfirmModal('Success', 'Piece order updated successfully!', () => { });
 };
 
 function translateHexToPieceCode(hex) {
@@ -1228,7 +1036,7 @@ function updateGlobalDivisionSetting(setting, value) {
         STATE.settings.divisionSettings = { byParity: true, byOrientation: true };
     }
     STATE.settings.divisionSettings[setting] = value;
-    
+
     // Reset all cards' view states to defaults when toggling
     STATE.cards.forEach(card => {
         if (!value) {
@@ -1239,9 +1047,9 @@ function updateGlobalDivisionSetting(setting, value) {
             }
         }
     });
-    
+
     saveState();
-    
+
     // Live update if card modal is open
     const openModal = document.querySelector('.modal');
     if (openModal && openModal.querySelector('[id^="cases-container-"]')) {
@@ -1258,7 +1066,7 @@ function updateGlobalDivisionSetting(setting, value) {
                     if (parityDiv) {
                         parityDiv.style.display = STATE.settings.divisionSettings?.byParity !== false ? 'flex' : 'none';
                     }
-                    
+
                     // Update orientation controls
                     const orientationDiv = controlsDiv.querySelector('div:has(input[name^="orientation-"])');
                     if (orientationDiv) {
@@ -1266,7 +1074,7 @@ function updateGlobalDivisionSetting(setting, value) {
                     }
                 }
             }
-            
+
             // Re-render cases with new division settings
             renderCases(cardIdx);
         }
@@ -1277,7 +1085,7 @@ function updateMemoVerticalMode(value) {
     if (!window.memoTrainingSettings) loadMemoTrainingSettings();
     window.memoTrainingSettings.enableVerticalMode = value;
     saveMemoTrainingSettings();
-    
+
     // Regenerate current visualization with new vertical mode if training is active
     const trainingArea = document.getElementById('memoTrainingArea');
     if (trainingArea && trainingArea.style.display !== 'none' && typeof generateMemoVisualization === 'function') {
@@ -1289,13 +1097,13 @@ function updateMemoTrackLastN(value) {
     if (!window.memoTrainingSettings) loadMemoTrainingSettings();
     window.memoTrainingSettings.trackLastNPieces = value;
     saveMemoTrainingSettings();
-    
+
     // Show/hide timed label container
     const timedContainer = document.getElementById('memoTimedLabelContainer');
     if (timedContainer) {
         timedContainer.style.display = value === 0 ? 'block' : 'none';
     }
-    
+
     // If training is active, apply new settings immediately
     if (typeof memoTrainingState !== 'undefined' && memoTrainingState.isActive) {
         // Clear existing timeout if switching from timed mode
@@ -1303,7 +1111,7 @@ function updateMemoTrackLastN(value) {
             clearTimeout(memoTrainingState.labelHideTimeout);
             memoTrainingState.labelHideTimeout = null;
         }
-        
+
         // Adjust visibility based on new setting
         if (value === 0) {
             // Switching to timed mode - hide all labels
@@ -1327,76 +1135,16 @@ function updateMemoShowLabelsForSeconds(value) {
     if (!window.memoTrainingSettings) loadMemoTrainingSettings();
     window.memoTrainingSettings.showLabelsForSeconds = value;
     saveMemoTrainingSettings();
-    
+
     // If in timed mode during active training, reset the current timeout with new duration
     if (typeof memoTrainingState !== 'undefined' && memoTrainingState.isActive && window.memoTrainingSettings.trackLastNPieces === 0 && memoTrainingState.clickHistory.length > 0) {
         if (memoTrainingState.labelHideTimeout) {
             clearTimeout(memoTrainingState.labelHideTimeout);
         }
-        
+
         const currentClick = memoTrainingState.clickHistory[0];
         const hideDelay = value * 1000;
-        
-        memoTrainingState.labelHideTimeout = setTimeout(() => {
-            currentClick.textElement.style.opacity = '0';
-            currentClick.polygon.dataset.clicked = 'false';
-            memoTrainingState.clickHistory = [];
-        }, hideDelay);
-    }
-}
 
-function updateMemoTrackLastN(value) {
-    if (!window.memoTrainingSettings) loadMemoTrainingSettings();
-    window.memoTrainingSettings.trackLastNPieces = value;
-    saveMemoTrainingSettings();
-    
-    // Show/hide timed label container
-    const timedContainer = document.getElementById('memoTimedLabelContainer');
-    if (timedContainer) {
-        timedContainer.style.display = value === 0 ? 'block' : 'none';
-    }
-    
-    // If training is active, apply new settings immediately
-    if (memoTrainingState.isActive) {
-        // Clear existing timeout if switching from timed mode
-        if (memoTrainingState.labelHideTimeout) {
-            clearTimeout(memoTrainingState.labelHideTimeout);
-            memoTrainingState.labelHideTimeout = null;
-        }
-        
-        // Adjust visibility based on new setting
-        if (value === 0) {
-            // Switching to timed mode - hide all labels
-            memoTrainingState.clickHistory.forEach(click => {
-                click.textElement.style.opacity = '0';
-                click.polygon.dataset.clicked = 'false';
-            });
-            memoTrainingState.clickHistory = [];
-        } else {
-            // Track last N mode - keep only last N visible
-            while (memoTrainingState.clickHistory.length > value) {
-                const oldestClick = memoTrainingState.clickHistory.shift();
-                oldestClick.textElement.style.opacity = '0';
-                oldestClick.polygon.dataset.clicked = 'false';
-            }
-        }
-    }
-}
-
-function updateMemoShowLabelsForSeconds(value) {
-    if (!window.memoTrainingSettings) loadMemoTrainingSettings();
-    window.memoTrainingSettings.showLabelsForSeconds = value;
-    saveMemoTrainingSettings();
-    
-    // If in timed mode during active training, reset the current timeout with new duration
-    if (memoTrainingState.isActive && memoTrainingSettings.trackLastNPieces === 0 && memoTrainingState.clickHistory.length > 0) {
-        if (memoTrainingState.labelHideTimeout) {
-            clearTimeout(memoTrainingState.labelHideTimeout);
-        }
-        
-        const currentClick = memoTrainingState.clickHistory[0];
-        const hideDelay = value * 1000;
-        
         memoTrainingState.labelHideTimeout = setTimeout(() => {
             currentClick.textElement.style.opacity = '0';
             currentClick.polygon.dataset.clicked = 'false';
@@ -1409,13 +1157,13 @@ function openSettingsTabInstructionModal() {
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.display = 'block';
-    
+
     // Get the active tab from the settings modal
     const titleEl = document.getElementById('settingsModalTitle');
     const currentTitle = titleEl ? titleEl.textContent : 'Settings';
-    
+
     let instructionContent = '';
-    
+
     if (currentTitle === 'Overall Settings') {
         instructionContent = `
             <h4 style="margin-bottom:10px;">Color Mappings:</h4>
