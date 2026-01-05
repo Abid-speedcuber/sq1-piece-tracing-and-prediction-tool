@@ -240,6 +240,15 @@ function renderCases(cardIdx) {
         const primaryAlgColor = swapAlgs ? '#000' : 'inherit';
         const secondaryAlgColor = swapAlgs ? '#999' : '#999';
 
+        // Generate x2 algorithm if needed
+        const showX2 = STATE.settings.personalization.showX2Algorithm;
+        let x2Algorithm = '';
+        let x2SetupMoves = '';
+        if (showX2) {
+            x2Algorithm = window.ScrambleNormalizer.generateX2Algorithm(normalizedSolution);
+            x2SetupMoves = pleaseInvertThisScrambleForSolutionVisualization(x2Algorithm);
+        }
+        
         const buttonsHtml = `
             ${!hideActualState ? `<button class="btn ${caseItem.showActualState ? 'btn-primary' : ''}" onclick="toggleShowActualState(${cardIdx}, ${actualIdx})" style="padding:6px 12px;font-size:13px;">Show Actual State</button>` : ''}
             ${!hideChangePieces ? `<button class="btn" onclick="openTrackPiecesPopup(event, ${cardIdx}, ${actualIdx})" style="padding:6px 12px;font-size:13px;">Change Tracked Pieces</button>` : ''}
@@ -263,21 +272,37 @@ function renderCases(cardIdx) {
         <div>
             <div style="margin-bottom:4px;">
                 <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Algorithm:</div>
-                <div style="font-family:monospace;font-size:${primaryAlgSize};color:${primaryAlgColor};background:transparent;word-break:break-all;">
-                    ${primaryAlg}
+                <div style="font-family:monospace;font-size:${showX2 ? '14px' : primaryAlgSize};color:${showX2 ? '#000' : primaryAlgColor};background:transparent;word-break:break-all;">
+                    ${showX2 ? highlightVariablesInNormalized(normalizedSolution) : primaryAlg}
                 </div>
             </div>
-            <div style="margin-bottom:12px;">
+            ${!showX2 ? `<div style="margin-bottom:12px;">
                 <div style="font-family:monospace;font-size:${secondaryAlgSize};color:${secondaryAlgColor};word-break:break-all;">
                     ${secondaryAlg}
                 </div>
-            </div>
-            <div style="margin-bottom:12px;padding-top:8px;border-top:1px solid #eee;">
+            </div>` : ''}
+            ${showX2 && STATE.settings.personalization.showSetupMoves ? `<div style="margin-bottom:12px;">
+                <div style="font-family:monospace;font-size:10px;color:#999;word-break:break-all;">
+                    ${setupMoves || '<span style="color:#999;">No setup moves</span>'}
+                </div>
+            </div>` : ''}
+            ${!showX2 && STATE.settings.personalization.showSetupMoves ? `<div style="margin-bottom:12px;padding-top:8px;border-top:1px solid #eee;">
                 <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Setup Moves:</div>
                 <div style="font-family:monospace;font-size:12px;color:#666;word-break:break-all;">
                     ${setupMoves || '<span style="color:#999;">No setup moves</span>'}
                 </div>
-            </div>
+            </div>` : ''}
+            ${showX2 ? `<div style="margin-bottom:12px;padding-top:8px;border-top:1px solid #eee;">
+                <div style="font-size:13px;font-weight:600;margin-bottom:4px;">x2 Algorithm:</div>
+                <div style="font-family:monospace;font-size:14px;color:#000;background:transparent;word-break:break-all;">
+                    ${highlightVariablesInNormalized(x2Algorithm)}
+                </div>
+            </div>` : ''}
+            ${showX2 && STATE.settings.personalization.showX2SetupMoves ? `<div style="margin-bottom:12px;">
+                <div style="font-family:monospace;font-size:10px;color:#999;word-break:break-all;">
+                    ${x2SetupMoves || '<span style="color:#999;">No x2 setup moves</span>'}
+                </div>
+            </div>` : ''}
             <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
                 ${buttonsHtml}
             </div>
@@ -301,21 +326,37 @@ function renderCases(cardIdx) {
         <div>
             <div style="margin-bottom:4px;">
                 <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Algorithm:</div>
-                <div style="font-family:monospace;font-size:${primaryAlgSize};color:${primaryAlgColor};background:transparent;word-break:break-all;">
-                    ${primaryAlg}
+                <div style="font-family:monospace;font-size:${showX2 ? '14px' : primaryAlgSize};color:${showX2 ? '#000' : primaryAlgColor};background:transparent;word-break:break-all;">
+                    ${showX2 ? highlightVariablesInNormalized(normalizedSolution) : primaryAlg}
                 </div>
             </div>
-            <div style="margin-bottom:12px;">
+            ${!showX2 ? `<div style="margin-bottom:12px;">
                 <div style="font-family:monospace;font-size:${secondaryAlgSize};color:${secondaryAlgColor};word-break:break-all;">
                     ${secondaryAlg}
                 </div>
-            </div>
-            <div style="margin-bottom:12px;padding-top:8px;border-top:1px solid #eee;">
+            </div>` : ''}
+            ${showX2 && STATE.settings.personalization.showSetupMoves ? `<div style="margin-bottom:12px;">
+                <div style="font-family:monospace;font-size:10px;color:#999;word-break:break-all;">
+                    ${setupMoves || '<span style="color:#999;">No setup moves</span>'}
+                </div>
+            </div>` : ''}
+            ${!showX2 && STATE.settings.personalization.showSetupMoves ? `<div style="margin-bottom:12px;padding-top:8px;border-top:1px solid #eee;">
                 <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Setup Moves:</div>
                 <div style="font-family:monospace;font-size:12px;color:#666;word-break:break-all;">
                     ${setupMoves || '<span style="color:#999;">No setup moves</span>'}
                 </div>
-            </div>
+            </div>` : ''}
+            ${showX2 ? `<div style="margin-bottom:12px;padding-top:8px;border-top:1px solid #eee;">
+                <div style="font-size:13px;font-weight:600;margin-bottom:4px;">x2 Algorithm:</div>
+                <div style="font-family:monospace;font-size:14px;color:#000;background:transparent;word-break:break-all;">
+                    ${highlightVariablesInNormalized(x2Algorithm)}
+                </div>
+            </div>` : ''}
+            ${showX2 && STATE.settings.personalization.showX2SetupMoves ? `<div style="margin-bottom:12px;">
+                <div style="font-family:monospace;font-size:10px;color:#999;word-break:break-all;">
+                    ${x2SetupMoves || '<span style="color:#999;">No x2 setup moves</span>'}
+                </div>
+            </div>` : ''}
             <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
                 ${buttonsHtml}
             </div>

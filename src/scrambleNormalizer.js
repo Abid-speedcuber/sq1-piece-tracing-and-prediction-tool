@@ -445,3 +445,43 @@ if (typeof module !== 'undefined' && module.exports) {
         normalizeScrambleFormat
     };
 }
+
+/**
+ * Generate x2 algorithm from normalized scramble
+ * @param {string} normalizedScramble - Normalized scramble string
+ * @returns {string} x2 algorithm
+ */
+function generateX2Algorithm(normalizedScramble) {
+    if (!normalizedScramble) return '';
+
+    // Split BUT keep slashes
+    let tokens = normalizedScramble
+        .split(/(\/)/)
+        .map(t => t.trim())
+        .filter(t => t);
+
+    // Flip each move (a,b) → (b,a), keep slashes untouched
+    tokens = tokens.map(token => {
+        const m = token.match(/\((-?\d+),(-?\d+)\)/);
+        if (!m) return token;
+        return `(${m[2]},${m[1]})`;
+    });
+
+    // Append (-1,1) WITHOUT inserting a slash
+    tokens.push("(-1,1)");
+
+    // Simplify only (no normalization, no re-parsing)
+    let steps = [];
+    tokens = simplifyScramble(tokens, steps);
+
+    return tokens.join(' ');
+}
+
+// Add to exports
+if (typeof window !== 'undefined') {
+    window.ScrambleNormalizer.generateX2Algorithm = generateX2Algorithm;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports.generateX2Algorithm = generateX2Algorithm;
+}

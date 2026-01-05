@@ -384,7 +384,10 @@ function renderCaseSettings() {
         ${createCheckbox('Hide "Show Actual State" Button', STATE.settings.personalization.hideActualStateButton, 'function(v) { STATE.settings.personalization.hideActualStateButton = v; saveState(); liveUpdateCaseModal(); }')}
         ${createCheckbox('Hide "Change Tracked Pieces" Button', STATE.settings.personalization.hideChangeTrackedPiecesButton, 'function(v) { STATE.settings.personalization.hideChangeTrackedPiecesButton = v; saveState(); liveUpdateCaseModal(); }')}
         ${createCheckbox('Hide "Show Reference Scheme" Button', STATE.settings.personalization.hideReferenceSchemeButton, 'function(v) { STATE.settings.personalization.hideReferenceSchemeButton = v; saveState(); liveUpdateCaseModal(); }')}
-        ${createCheckbox('Swap Input & Normalized Algorithm Display', STATE.settings.personalization.swapAlgorithmDisplay, 'function(v) { STATE.settings.personalization.swapAlgorithmDisplay = v; saveState(); liveUpdateCaseModal(); }')}
+        ${createCheckbox('Swap Input & Normalized Algorithm Display', STATE.settings.personalization.swapAlgorithmDisplay, 'function(v) { STATE.settings.personalization.swapAlgorithmDisplay = v; saveState(); liveUpdateCaseModal(); }', STATE.settings.personalization.showX2Algorithm ? 'opacity:0.5;pointer-events:none;' : '')}
+        ${createCheckbox('Show Setup Moves', STATE.settings.personalization.showSetupMoves, 'function(v) { STATE.settings.personalization.showSetupMoves = v; saveState(); liveUpdateCaseModal(); }')}
+        ${createCheckbox('Show x2 Algorithm (Matt)', STATE.settings.personalization.showX2Algorithm, 'function(v) { STATE.settings.personalization.showX2Algorithm = v; if (!v) STATE.settings.personalization.showX2SetupMoves = false; saveState(); liveUpdateCaseModal(); updateX2DependentCheckbox(); }')}
+        ${createCheckbox('Show x2 Setup Moves', STATE.settings.personalization.showX2SetupMoves, 'function(v) { STATE.settings.personalization.showX2SetupMoves = v; saveState(); liveUpdateCaseModal(); }', !STATE.settings.personalization.showSetupMoves || !STATE.settings.personalization.showX2Algorithm ? 'opacity:0.5;pointer-events:none;' : '')}
         ${createCheckbox('Enable Vertical Layout (beta)', STATE.settings.personalization.enableMobileView, 'function(v) { STATE.settings.personalization.enableMobileView = v; saveState(); liveUpdateCaseModal(); }')}
         ${createCheckbox('Hide Override Tracked Pieces in Edit Modal', STATE.settings.personalization.hideOverrideTrackedPieces, 'function(v) { STATE.settings.personalization.hideOverrideTrackedPieces = v; saveState(); liveUpdateCaseModal(); }')}
         ${createCheckbox('Show Train Button on Case Screen', STATE.settings.personalization.showTrainButtonCase, 'function(v) { STATE.settings.personalization.showTrainButtonCase = v; saveState(); liveUpdateCaseModalTopbar(); }')}
@@ -1316,5 +1319,41 @@ function updateSettingsInstructionButton() {
     const instructionBtn = document.querySelector('.modal-header button[onclick="openSettingsTabInstructionModal()"]');
     if (instructionBtn) {
         instructionBtn.style.display = STATE.settings.personalization.hideInstructions ? 'none' : 'flex';
+    }
+}
+
+function updateX2DependentCheckbox() {
+    // Find the x2 setup moves checkbox in the settings modal
+    const settingsContent = document.getElementById('settingsTabContent');
+    if (settingsContent) {
+        // Re-render case settings to update checkbox states
+        const isX2Enabled = STATE.settings.personalization.showX2Algorithm;
+        const isSetupEnabled = STATE.settings.personalization.showSetupMoves;
+        
+        // Update the swap algorithm display checkbox
+        const swapCheckboxes = settingsContent.querySelectorAll('input[type="checkbox"]');
+        swapCheckboxes.forEach(checkbox => {
+            const parent = checkbox.closest('.settings-group');
+            if (parent && parent.textContent.includes('Swap Input & Normalized')) {
+                if (isX2Enabled) {
+                    parent.style.opacity = '0.5';
+                    parent.style.pointerEvents = 'none';
+                } else {
+                    parent.style.opacity = '1';
+                    parent.style.pointerEvents = 'auto';
+                }
+            }
+            if (parent && parent.textContent.includes('Show x2 Setup Moves')) {
+                if (!isSetupEnabled || !isX2Enabled) {
+                    parent.style.opacity = '0.5';
+                    parent.style.pointerEvents = 'none';
+                    checkbox.checked = false;
+                    STATE.settings.personalization.showX2SetupMoves = false;
+                } else {
+                    parent.style.opacity = '1';
+                    parent.style.pointerEvents = 'auto';
+                }
+            }
+        });
     }
 }

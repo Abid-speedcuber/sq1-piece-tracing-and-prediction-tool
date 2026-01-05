@@ -28,7 +28,10 @@ const STATE = {
         },
         enableLabels: true,
         personalization: {
-            hideActualStateButton: false,
+    showSetupMoves: true,
+    showX2Algorithm: false,
+    showX2SetupMoves: false,
+    hideActualStateButton: false,
             hideChangeTrackedPiecesButton: false,
             hideReferenceSchemeButton: false,
             swapAlgorithmDisplay: true,
@@ -140,20 +143,33 @@ function loadState() {
 
         // Ensure personalization settings exist
         if (!STATE.settings.personalization) {
-            STATE.settings.personalization = {
-                hideActualStateButton: false,
-                hideChangeTrackedPiecesButton: false,
-                hideReferenceSchemeButton: false,
-                swapAlgorithmDisplay: true,
-                enableMobileView: false,
-                hideSearchBar: false,
-                hideOverrideTrackedPieces: true,
-                cardScale: 1,
-                hideInstructions: false,
-                showTrainButtonHome: false,
-                showTrainButtonCase: false
-            };
-        }
+    STATE.settings.personalization = {
+        showSetupMoves: true,
+        showX2Algorithm: false,
+        showX2SetupMoves: false,
+        hideActualStateButton: false,
+        hideChangeTrackedPiecesButton: false,
+        hideReferenceSchemeButton: false,
+        swapAlgorithmDisplay: true,
+        enableMobileView: false,
+        hideSearchBar: false,
+        hideOverrideTrackedPieces: true,
+        cardScale: 1,
+        hideInstructions: false,
+        showTrainButtonHome: false,
+        showTrainButtonCase: false
+    };
+}
+// Ensure all fields exist for existing users
+if (STATE.settings.personalization.showSetupMoves === undefined) {
+    STATE.settings.personalization.showSetupMoves = true;
+}
+if (STATE.settings.personalization.showX2Algorithm === undefined) {
+    STATE.settings.personalization.showX2Algorithm = false;
+}
+if (STATE.settings.personalization.showX2SetupMoves === undefined) {
+    STATE.settings.personalization.showX2SetupMoves = false;
+}
         // Ensure hideInstructions exists for existing users
         if (STATE.settings.personalization.hideInstructions === undefined) {
             STATE.settings.personalization.hideInstructions = false;
