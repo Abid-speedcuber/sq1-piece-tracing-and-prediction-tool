@@ -688,8 +688,10 @@ function exportData() {
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.download = 'sq1-co-tracker-data.json';
+    a.href = url;
+    a.download = 'oblp-data.json';
     a.click();
+    URL.revokeObjectURL(url);
 }
 
 function importData(input) {
